@@ -1,46 +1,177 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Zapatex</title>
+  <meta charset="UTF-8" />
+  <title>Zapatex - Venta</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
+    .sucursal { margin-bottom: 8px; }
+    .separador { border-top: 1px solid #ccc; margin: 10px 0; }
+    label { display: block; margin-top: 10px; }
+    input, select, button { padding: 5px; margin-top: 5px; }
+    button { cursor: pointer; }
+  </style>
 </head>
 <body>
-    <h1>Zapatex - Sistema de Ventas</h1>
+  <h1>Venta Zapatex</h1>
 
-    <form id="formVenta">
-        <label for="sucursal">Sucursal:</label>
-        <select id="sucursal" name="sucursal">
-            {% for stock in stocks %}
-                <option value="{{ stock.sucursal }}">{{ stock.sucursal }} - Cant: {{ stock.cantidad }} - Precio: {{ stock.precio }}</option>
-            {% endfor %}
-        </select>
+  <label for="buscar">Buscar producto:</label>
+  <input type="text" id="buscar" placeholder="Escribe nombre del producto..." />
 
-        <label for="cantidad">Cantidad:</label>
-        <input type="number" id="cantidad" name="cantidad" required>
+  <div id="lista-sucursales"></div>
 
-        <button type="submit">Vender</button>
-    </form>
+  <div class="separador"></div>
 
-    <script>
-        document.getElementById('formVenta').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sucursal = document.getElementById('sucursal').value;
-            const cantidad = parseInt(document.getElementById('cantidad').value);
+  <div>
+    <strong>Casa Matriz</strong>
+    <div id="casa-matriz"></div>
+  </div>
 
-            const res = await fetch('/vender', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ sucursal, cantidad })
-            });
+  <label for="select-sucursal">Sucursales:</label>
+  <select id="select-sucursal"></select>
 
-            const data = await res.json();
-            if (data.status === 'ok') {
-                alert('Venta realizada correctamente');
-                location.reload();
-            } else {
-                alert(data.message);
-            }
-        });
-    </script>
+  <label for="cantidad">Cantidad:</label>
+  <input type="number" id="cantidad" min="1" value="1" />
+
+  <button id="btn-calc">Calcular Total USD</button>
+
+  <p id="total"></p>
+
+  <button id="btn-venta">Venta</button>
+
+  <script>
+    const backendURL = 'http://127.0.0.1:5000'; // Cambiar si tu backend corre en otro lado
+
+    let productos = []; // Todos los stocks desde backend
+    let productoFiltrado = null;
+
+    // Función para cargar stock desde backend
+    async function cargarStocks() {
+      const res = await fetch(`${backendURL}/stocks`);
+      productos = await res.json();
+      mostrarSucursales();
+      llenarSelectSucursales();
+      mostrarCasaMatriz();
+    }
+
+    // Mostrar sucursales y stock en div lista-sucursales
+    function mostrarSucursales() {
+      const listaDiv = document.getElementById('lista-sucursales');
+      listaDiv.innerHTML = '';
+      // Filtramos por producto buscado si aplica
+      const busqueda = document.getElementById('buscar').value.toLowerCase();
+      const filtrados = productos.filter(p => p.producto.toLowerCase().includes(busqueda));
+
+      filtrados.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'sucursal';
+        div.textContent = `${p.sucursal} - Cant: ${p.cantidad} | Precio: ${p.precio}`;
+        listaDiv.appendChild(div);
+      });
+
+      // Si hay un solo producto, lo guardamos para usar después
+      productoFiltrado = filtrados.length === 1 ? filtrados[0] : null;
+    }
+
+    // Mostrar Casa Matriz stock y precio
+    function mostrarCasaMatriz() {
+      const casaDiv = document.getElementById('casa-matriz');
+      const casa = productos.find(p => p.sucursal.toLowerCase() === 'casa matriz');
+      if(casa) {
+        casaDiv.textContent = `Cant: ${casa.cantidad} | Precio: ${casa.precio}`;
+      } else {
+        casaDiv.textContent = 'No hay datos Casa Matriz';
+      }
+    }
+
+    // Llenar selector sucursales
+    function llenarSelectSucursales() {
+      const select = document.getElementById('select-sucursal');
+      select.innerHTML = '';
+      const sucursalesUnicas = [...new Set(productos.map(p => p.sucursal))];
+      sucursalesUnicas.forEach(s => {
+        if(s.toLowerCase() !== 'casa matriz') {
+          const option = document.createElement('option');
+          option.value = s;
+          option.textContent = s;
+          select.appendChild(option);
+        }
+      });
+    }
+
+    // Calcular total y total USD usando endpoint
+    async function calcularTotalUSD() {
+      const cantidad = parseInt(document.getElementById('cantidad').value);
+      const sucursal = document.getElementById('select-sucursal').value;
+
+      // Buscamos producto en esa sucursal
+      const stock = productos.find(p => p.sucursal === sucursal);
+
+      if(!stock) {
+        alert('Sucursal no encontrada');
+        return;
+      }
+      if(cantidad > stock.cantidad) {
+        alert('Cantidad supera stock disponible');
+        return;
+      }
+
+      const totalLocal = stock.precio * cantidad;
+
+      // Llamar al backend para convertir a USD
+      const res = await fetch(`${backendURL}/convertir_usd`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ precio: totalLocal })
+      });
+      const data = await res.json();
+
+      document.getElementById('total').textContent = `Total: ${totalLocal} CLP | Total USD: ${data.precio_usd}`;
+    }
+
+    // Simular venta: disminuir stock (manda datos a backend)
+    async function realizarVenta() {
+      const cantidad = parseInt(document.getElementById('cantidad').value);
+      const sucursal = document.getElementById('select-sucursal').value;
+
+      // Buscamos producto en esa sucursal
+      const stock = productos.find(p => p.sucursal === sucursal);
+
+      if(!stock) {
+        alert('Sucursal no encontrada');
+        return;
+      }
+      if(cantidad > stock.cantidad) {
+        alert('Cantidad supera stock disponible');
+        return;
+      }
+
+      // Enviar POST para disminuir stock en backend
+      const res = await fetch(`${backendURL}/venta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sucursal, cantidad })
+      });
+
+      const data = await res.json();
+
+      if(data.error) {
+        alert('Error: ' + data.error);
+      } else {
+        alert('Venta realizada con éxito');
+        await cargarStocks(); // Recargar stocks actualizados
+        document.getElementById('total').textContent = '';
+      }
+    }
+
+    // Eventos
+    document.getElementById('buscar').addEventListener('input', mostrarSucursales);
+    document.getElementById('btn-calc').addEventListener('click', calcularTotalUSD);
+    document.getElementById('btn-venta').addEventListener('click', realizarVenta);
+
+    // Al cargar página
+    cargarStocks();
+
+  </script>
 </body>
 </html>
