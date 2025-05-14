@@ -1,1 +1,46 @@
-venv\Scripts\activate
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Zapatex</title>
+</head>
+<body>
+    <h1>Zapatex - Sistema de Ventas</h1>
+
+    <form id="formVenta">
+        <label for="sucursal">Sucursal:</label>
+        <select id="sucursal" name="sucursal">
+            {% for stock in stocks %}
+                <option value="{{ stock.sucursal }}">{{ stock.sucursal }} - Cant: {{ stock.cantidad }} - Precio: {{ stock.precio }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" name="cantidad" required>
+
+        <button type="submit">Vender</button>
+    </form>
+
+    <script>
+        document.getElementById('formVenta').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sucursal = document.getElementById('sucursal').value;
+            const cantidad = parseInt(document.getElementById('cantidad').value);
+
+            const res = await fetch('/vender', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ sucursal, cantidad })
+            });
+
+            const data = await res.json();
+            if (data.status === 'ok') {
+                alert('Venta realizada correctamente');
+                location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    </script>
+</body>
+</html>
