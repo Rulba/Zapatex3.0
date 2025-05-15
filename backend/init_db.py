@@ -1,20 +1,19 @@
-from app import app, db
-import models
-from models import Stock
+from app import app
+from models import db, Stock
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
-    print("Base de datos creada correctamente.")
 
-    # Datos de ejemplo
+    # Datos de prueba
     productos = [
-        Stock(producto='Zapato Casual', sucursal='Sucursal 1', cantidad=31, precio=333),
-        Stock(producto='Zapato Casual', sucursal='Sucursal 2', cantidad=23, precio=222),
-        Stock(producto='Zapato Casual', sucursal='Sucursal 3', cantidad=100, precio=1111),
-        Stock(producto='Zapato Casual', sucursal='Casa Matriz', cantidad=10, precio=999),
+        Stock(sucursal='Sucursal 1', producto='ZapatoX', cantidad=31, precio=333),
+        Stock(sucursal='Sucursal 2', producto='ZapatoX', cantidad=23, precio=222),
+        Stock(sucursal='Sucursal 3', producto='ZapatoX', cantidad=100, precio=1111),
+        Stock(sucursal='Casa Matriz', producto='ZapatoX', cantidad=10, precio=999),
     ]
 
-    # Insertar datos
-    db.session.bulk_save_objects(productos)
+    db.session.add_all(productos)
     db.session.commit()
-    print("Datos iniciales insertados correctamente.")
+
+    print("📦 Base de datos inicializada con datos de prueba.")
