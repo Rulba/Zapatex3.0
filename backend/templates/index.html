@@ -1,179 +1,129 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Zapatex - Venta</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; }
-    .sucursal { margin-bottom: 8px; }
-    .separador { border-top: 1px solid #ccc; margin: 10px 0; }
-    label { display: block; margin-top: 10px; }
-    input, select, button { padding: 5px; margin-top: 5px; }
-    button { cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    .sucursal {
+      margin-bottom: 5px;
+    }
+    .separador {
+      border-top: 1px solid #ccc;
+      margin: 10px 0;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, button {
+      padding: 5px;
+      margin-top: 5px;
+      display: block;
+    }
+    button {
+      cursor: pointer;
+      width: fit-content;
+    }
+    #alerta-stock {
+      display: none;
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    #cantidad-total {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
   <h1>Venta Zapatex</h1>
 
   <label for="buscar">Buscar producto:</label>
-  <input type="text" id="buscar" placeholder="Escribe nombre del producto..." />
+  <input type="text" id="buscar" placeholder="Escribe producto..." />
 
-  <div id="lista-sucursales"></div>
+  <div id="sucursales-list"></div>
 
   <div class="separador"></div>
 
-  <div>
-    <strong>Casa Matriz</strong>
-    <div id="casa-matriz"></div>
+  <strong>Casa Matriz</strong>
+  <div id="casa-matriz"></div>
+
+  <label for="sucursal">Sucursales:</label>
+  <select id="sucursal"></select>
+
+  <div id="cantidad-total">
+    <div>
+      <label for="cantidad">Cantidad:</label>
+      <input type="number" id="cantidad" min="1" value="1">
+    </div>
+    <button id="calcular">Calcular Total USD</button>
   </div>
-
-  <label for="select-sucursal">Sucursales:</label>
-  <select id="select-sucursal"></select>
-
-  <label for="cantidad">Cantidad:</label>
-  <input type="number" id="cantidad" min="1" value="1" />
-
-  <button id="btn-calc">Calcular Total USD</button>
 
   <p id="total"></p>
 
-  <button id="btn-venta">Venta</button>
+  <button id="vender">Venta</button>
+
+  <div id="alerta-stock"></div>
 
   <script>
-    const backendURL = 'http://127.0.0.1:5000'; // Cambiar si tu backend corre en otro lado
+    let productos = [];
 
-    let productos = []; // Todos los stocks desde backend
-    let productoFiltrado = null;
+    async function cargarDatos() {
+      const res = await fetch('/api/stock');
+      const data = await res.json();
+      productos = data.sucursales;
+      const lista = document.getElementById('sucursales-list');
+      const select = document.getElementById('sucursal');
+      lista.innerHTML = '';
+      select.innerHTML = '';
 
-    // Función para cargar stock desde backend
-    async function cargarStocks() {
-      const res = await fetch(`${backendURL}/stocks`);
-      productos = await res.json();
-      mostrarSucursales();
-      llenarSelectSucursales();
-      mostrarCasaMatriz();
-    }
-
-    // Mostrar sucursales y stock en div lista-sucursales
-    function mostrarSucursales() {
-      const listaDiv = document.getElementById('lista-sucursales');
-      listaDiv.innerHTML = '';
-      // Filtramos por producto buscado si aplica
-      const busqueda = document.getElementById('buscar').value.toLowerCase();
-      const filtrados = productos.filter(p => p.producto.toLowerCase().includes(busqueda));
-
-      filtrados.forEach(p => {
+      productos.forEach((s) => {
         const div = document.createElement('div');
         div.className = 'sucursal';
-        div.textContent = `${p.sucursal} - Cant: ${p.cantidad} | Precio: ${p.precio}`;
-        listaDiv.appendChild(div);
-      });
+        div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
+        lista.appendChild(div);
 
-      // Si hay un solo producto, lo guardamos para usar después
-      productoFiltrado = filtrados.length === 1 ? filtrados[0] : null;
-    }
+        const opt = document.createElement('option');
+        opt.value = s.sucursal;
+        opt.textContent = s.sucursal;
+        select.appendChild(opt);
 
-    // Mostrar Casa Matriz stock y precio
-    function mostrarCasaMatriz() {
-      const casaDiv = document.getElementById('casa-matriz');
-      const casa = productos.find(p => p.sucursal.toLowerCase() === 'casa matriz');
-      if(casa) {
-        casaDiv.textContent = `Cant: ${casa.cantidad} | Precio: ${casa.precio}`;
-      } else {
-        casaDiv.textContent = 'No hay datos Casa Matriz';
-      }
-    }
-
-    // Llenar selector sucursales
-    function llenarSelectSucursales() {
-      const select = document.getElementById('select-sucursal');
-      select.innerHTML = '';
-      const sucursalesUnicas = [...new Set(productos.map(p => p.sucursal))];
-      sucursalesUnicas.forEach(s => {
-        if(s.toLowerCase() !== 'casa matriz') {
-          const option = document.createElement('option');
-          option.value = s;
-          option.textContent = s;
-          select.appendChild(option);
+        if (s.cantidad === 0) {
+          const alerta = document.getElementById('alerta-stock');
+          alerta.style.display = 'block';
+          alerta.textContent = `Stock bajo en ${s.sucursal}`;
         }
       });
+
+      if (data.casa_matriz) {
+        document.getElementById('casa-matriz').textContent =
+          `Cant: ${data.casa_matriz.cantidad} | Precio: ${data.casa_matriz.precio}`;
+      }
     }
 
-    // Calcular total y total USD usando endpoint
-    async function calcularTotalUSD() {
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarDatos();
+    });
+
+    document.getElementById('calcular').addEventListener('click', async () => {
+      const sucursal = document.getElementById('sucursal').value;
       const cantidad = parseInt(document.getElementById('cantidad').value);
-      const sucursal = document.getElementById('select-sucursal').value;
+      const stock = productos.find(s => s.sucursal === sucursal);
+      if (!stock) return;
 
-      // Buscamos producto en esa sucursal
-      const stock = productos.find(p => p.sucursal === sucursal);
-
-      if(!stock) {
-        alert('Sucursal no encontrada');
-        return;
-      }
-      if(cantidad > stock.cantidad) {
-        alert('Cantidad supera stock disponible');
-        return;
-      }
-
-      const totalLocal = stock.precio * cantidad;
-
-      // Llamar al backend para convertir a USD
-      const res = await fetch(`${backendURL}/convertir_usd`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precio: totalLocal })
-      });
+      const totalCLP = cantidad * stock.precio;
+      const res = await fetch(`/api/usd?clp=${totalCLP}`);
       const data = await res.json();
-
-      document.getElementById('total').textContent = `Total: ${totalLocal} CLP | Total USD: ${data.precio_usd}`;
-    }
-
-    // Simular venta: disminuir stock (manda datos a backend)
-    async function realizarVenta() {
-      const cantidad = parseInt(document.getElementById('cantidad').value);
-      const sucursal = document.getElementById('select-sucursal').value;
-
-      // Buscamos producto en esa sucursal
-      const stock = productos.find(p => p.sucursal === sucursal);
-
-      if(!stock) {
-        alert('Sucursal no encontrada');
-        return;
-      }
-      if(cantidad > stock.cantidad) {
-        alert('Cantidad supera stock disponible');
-        return;
-      }
-
-      // Enviar POST para disminuir stock en backend
-      const res = await fetch(`${backendURL}/venta`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sucursal, cantidad })
-      });
-
-      const data = await res.json();
-
-      if(data.error) {
-        alert('Error: ' + data.error);
-      } else {
-        alert('Venta realizada con éxito');
-        await cargarStocks(); // Recargar stocks actualizados
-        document.getElementById('total').textContent = '';
-      }
-    }
-
-    // Eventos
-    document.getElementById('buscar').addEventListener('input', mostrarSucursales);
-    document.getElementById('btn-calc').addEventListener('click', calcularTotalUSD);
-    document.getElementById('btn-venta').addEventListener('click', realizarVenta);
-
-    // Al cargar página
-    cargarStocks();
-
+      document.getElementById('total').textContent =
+        `Total: ${totalCLP} CLP | USD: ${data.usd}`;
+    });
   </script>
-
-  
 </body>
 </html>
