@@ -1,5 +1,6 @@
-from app import db
-
+from extensions import db
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
 class Stock(db.Model):
     __tablename__ = 'stock'
     __table_args__ = {'extend_existing': True}

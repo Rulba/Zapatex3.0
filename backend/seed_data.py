@@ -1,4 +1,4 @@
-from app import app, db
+from main import app, db
 from models import Stock
 
 # Ejecutar dentro del contexto de la app Flask

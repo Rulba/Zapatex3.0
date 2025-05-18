@@ -1,4 +1,4 @@
-from app import app
+from main import app
 from models import db, Stock
 
 with app.app_context():
