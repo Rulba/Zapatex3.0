@@ -3,43 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Zapatex - Venta</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    .sucursal {
-      margin-bottom: 5px;
-    }
-    .separador {
-      border-top: 1px solid #ccc;
-      margin: 10px 0;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    input, select, button {
-      padding: 5px;
-      margin-top: 5px;
-      display: block;
-    }
-    button {
-      cursor: pointer;
-      width: fit-content;
-    }
-    #alerta-stock {
-      display: none;
-      color: red;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    #cantidad-total {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
   </style>
 </head>
 <body>
@@ -229,6 +194,8 @@
   document.addEventListener('DOMContentLoaded', cargarDatos);
 
 </script>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>
