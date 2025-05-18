@@ -37,6 +37,7 @@ def get_stock():
     stocks = Stock.query.all()
     for s in stocks:
         info = {
+            "producto": s.producto,  # ✅ Agrega esta línea
             "sucursal": s.sucursal,
             "cantidad": s.cantidad,
             "precio": s.precio
@@ -50,6 +51,8 @@ def get_stock():
         "sucursales": sucursales,
         "casa_matriz": casa_matriz
     })
+
+
 @app.route('/api/usd')
 def convertir_usd():
     clp = float(request.args.get('clp', 0))

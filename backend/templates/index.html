@@ -73,27 +73,66 @@
   <div id="alerta-stock"></div>
 
   <script>
-    let productos = [];
+  let productos = [];
 
-    async function cargarDatos() {
-      const res = await fetch('/api/stock');
-      const data = await res.json();
-      productos = data.sucursales;
-      const lista = document.getElementById('sucursales-list');
-      const select = document.getElementById('sucursal');
-      lista.innerHTML = '';
-      select.innerHTML = '';
+  async function cargarDatos() {
+    const res = await fetch('/api/stock');
+    const data = await res.json();
 
-      productos.forEach((s) => {
+    productos = [...data.sucursales];
+    if (data.casa_matriz) {
+      productos.push(data.casa_matriz);
+    }
+
+    mostrarProductos();  // Mostramos todo al cargar
+  }
+
+  function mostrarProductos(filtro = '') {
+    const lista = document.getElementById('sucursales-list');
+    const select = document.getElementById('sucursal');
+    const matrizDiv = document.getElementById('casa-matriz');
+
+    lista.innerHTML = '';
+    select.innerHTML = '';
+    matrizDiv.innerHTML = '';
+    document.getElementById('alerta-stock').style.display = 'none';
+
+    // Filtrar por nombre de producto si se escribió algo
+    const filtroLower = filtro.toLowerCase();
+    const productosFiltrados = filtro
+      ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
+      : productos;
+
+    // Agrupar por producto
+    const productosAgrupados = {};
+    productosFiltrados.forEach(p => {
+      if (!productosAgrupados[p.producto]) {
+        productosAgrupados[p.producto] = [];
+      }
+      productosAgrupados[p.producto].push(p);
+    });
+
+    // Mostrar por producto
+    for (const nombreProducto in productosAgrupados) {
+      const encabezado = document.createElement('h3');
+      encabezado.textContent = nombreProducto;
+      lista.appendChild(encabezado);
+
+      productosAgrupados[nombreProducto].forEach(s => {
         const div = document.createElement('div');
         div.className = 'sucursal';
         div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
         lista.appendChild(div);
 
-        const opt = document.createElement('option');
-        opt.value = s.sucursal;
-        opt.textContent = s.sucursal;
-        select.appendChild(opt);
+        // Agregar al select si no es casa matriz
+        if (s.sucursal.toLowerCase() !== 'casa matriz') {
+          const opt = document.createElement('option');
+          opt.value = s.sucursal;
+          opt.textContent = s.sucursal;
+          select.appendChild(opt);
+        } else {
+          matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
+        }
 
         if (s.cantidad === 0) {
           const alerta = document.getElementById('alerta-stock');
@@ -102,28 +141,33 @@
         }
       });
 
-      if (data.casa_matriz) {
-        document.getElementById('casa-matriz').textContent =
-          `Cant: ${data.casa_matriz.cantidad} | Precio: ${data.casa_matriz.precio}`;
-      }
+      // Separador visual
+      const sep = document.createElement('hr');
+      lista.appendChild(sep);
     }
+  }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      cargarDatos();
-    });
+  document.getElementById('buscar').addEventListener('input', e => {
+    mostrarProductos(e.target.value);
+  });
 
-    document.getElementById('calcular').addEventListener('click', async () => {
-      const sucursal = document.getElementById('sucursal').value;
-      const cantidad = parseInt(document.getElementById('cantidad').value);
-      const stock = productos.find(s => s.sucursal === sucursal);
-      if (!stock) return;
+  document.getElementById('calcular').addEventListener('click', async () => {
+    const sucursal = document.getElementById('sucursal').value;
+    const cantidad = parseInt(document.getElementById('cantidad').value);
 
-      const totalCLP = cantidad * stock.precio;
-      const res = await fetch(`/api/usd?clp=${totalCLP}`);
-      const data = await res.json();
-      document.getElementById('total').textContent =
-        `Total: ${totalCLP} CLP | USD: ${data.usd}`;
-    });
-  </script>
+    const stock = productos.find(s => s.sucursal === sucursal);
+    if (!stock) return;
+
+    const totalCLP = cantidad * stock.precio;
+    const res = await fetch(`/api/usd?clp=${totalCLP}`);
+    const data = await res.json();
+
+    document.getElementById('total').textContent =
+      `Total: ${totalCLP} CLP | USD: ${data.usd}`;
+  });
+
+  document.addEventListener('DOMContentLoaded', cargarDatos);
+</script>
+
 </body>
 </html>
