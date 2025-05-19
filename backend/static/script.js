@@ -36,27 +36,39 @@ function mostrarProductos(filtro = '') {
   });
 
   for (const nombreProducto in productosAgrupados) {
-    const contenedor = document.createElement('div');
-    contenedor.className = 'producto-group';
+    const grupo = document.createElement('div');
+    grupo.className = 'producto-group';
 
-    const encabezado = document.createElement('h3');
-    encabezado.textContent = nombreProducto;
-    contenedor.appendChild(encabezado);
+    // Header con flecha
+    const header = document.createElement('div');
+    header.className = 'producto-header';
+
+    const flecha = document.createElement('span');
+    flecha.textContent = '▶ ';
+    flecha.style.display = 'inline-block';
+    flecha.style.transition = 'transform 0.2s ease';
+    flecha.className = 'flecha';
+
+    header.appendChild(flecha);
+    header.appendChild(document.createTextNode(nombreProducto));
+
+    // Contenedor de sucursales oculto
+    const contenedorSucursales = document.createElement('div');
+    contenedorSucursales.className = 'producto-detalle';
+    contenedorSucursales.style.display = 'none';
 
     productosAgrupados[nombreProducto].forEach(s => {
       const div = document.createElement('div');
       div.className = 'sucursal';
       div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
-      contenedor.appendChild(div);
+      contenedorSucursales.appendChild(div);
 
-      // Evitar duplicados en el select
-if (![...select.options].some(opt => opt.value === s.sucursal)) {
-  const opt = document.createElement('option');
-  opt.value = s.sucursal;
-  opt.textContent = s.sucursal;
-  select.appendChild(opt);
-}
-
+      if (![...select.options].some(opt => opt.value === s.sucursal)) {
+        const opt = document.createElement('option');
+        opt.value = s.sucursal;
+        opt.textContent = s.sucursal;
+        select.appendChild(opt);
+      }
 
       if (s.sucursal.toLowerCase() === 'casa matriz') {
         matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
@@ -69,9 +81,21 @@ if (![...select.options].some(opt => opt.value === s.sucursal)) {
       }
     });
 
-    lista.appendChild(contenedor);
+    // Toggle visibilidad
+    header.addEventListener('click', () => {
+      const visible = contenedorSucursales.style.display === 'block';
+      contenedorSucursales.style.display = visible ? 'none' : 'block';
+      flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+    });
+
+    grupo.appendChild(header);
+    grupo.appendChild(contenedorSucursales);
+    lista.appendChild(grupo);
   }
 }
+
+
+
 
 document.getElementById('buscar').addEventListener('input', e => {
   mostrarProductos(e.target.value);
@@ -79,7 +103,7 @@ document.getElementById('buscar').addEventListener('input', e => {
 
 document.getElementById('calcular').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = document.querySelector('#sucursales-list h3')?.textContent;
+  const nombreProducto = document.querySelector('.producto-header')?.textContent;
 
   if (!nombreProducto) {
     alert('Primero busca y selecciona un producto válido');

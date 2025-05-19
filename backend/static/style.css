@@ -104,4 +104,24 @@ input[type="number"]::-webkit-inner-spin-button {
   h1 {
     font-size: 1.5rem;
   }
+
+  
+}.producto-header {
+  padding: 8px;
+  background-color: #dbe9f4;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 6px;
 }
+
+.producto-header:hover {
+  background-color: #bcdff0;
+}
+
+.producto-detalle {
+  margin-top: 8px;
+}
+
+
