@@ -199,6 +199,5 @@ document.getElementById('vender').addEventListener('click', async () => {
   } else {
     alert('❌ Error en venta: ' + (data.error || 'Desconocido'));
   }
-});
 
 document.addEventListener('DOMContentLoaded', cargarDatos);
