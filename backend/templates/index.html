@@ -52,71 +52,96 @@
     mostrarProductos();  // Mostramos todo al cargar
   }
 
-  function mostrarProductos(filtro = '') {
-    const lista = document.getElementById('sucursales-list');
-    const select = document.getElementById('sucursal');
-    const matrizDiv = document.getElementById('casa-matriz');
-  
-    lista.innerHTML = '';
-    select.innerHTML = '';
-    matrizDiv.innerHTML = '';
-    document.getElementById('alerta-stock').style.display = 'none';
-  
-    const filtroLower = filtro.toLowerCase();
-    const productosFiltrados = filtro
-      ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
-      : productos;
-  
-    // Agrupar por nombre de producto
-    const productosAgrupados = {};
-    productosFiltrados.forEach(p => {
-      if (!productosAgrupados[p.producto]) {
-        productosAgrupados[p.producto] = [];
-      }
-      productosAgrupados[p.producto].push(p);
-    });
-  
-    for (const nombreProducto in productosAgrupados) {
-      const encabezado = document.createElement('h3');
-      encabezado.className = 'producto-header';
-      encabezado.textContent = nombreProducto;
-      lista.appendChild(encabezado);
-  
-      const sucursalesAgregadas = new Set();
-  
-      productosAgrupados[nombreProducto].forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'sucursal';
-        div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
-        lista.appendChild(div);
-  
-        if (!sucursalesAgregadas.has(s.sucursal)) {
-          sucursalesAgregadas.add(s.sucursal);
-          const opt = document.createElement('option');
-          opt.value = s.sucursal;
-          opt.textContent = s.sucursal;
-          select.appendChild(opt);
-        }
-  
-        if (s.sucursal.toLowerCase() === 'casa matriz') {
-          matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
-        }
-  
-        if (s.cantidad === 0) {
-          const alerta = document.getElementById('alerta-stock');
-          alerta.style.display = 'block';
-          alerta.textContent = `Stock bajo en ${s.sucursal}`;
-        }
-      });
+function mostrarProductos(filtro = '') {
+  const lista = document.getElementById('sucursales-list');
+  const select = document.getElementById('sucursal');
+  const matrizDiv = document.getElementById('casa-matriz');
+  const alerta = document.getElementById('alerta-stock');
+
+  lista.innerHTML = '';
+  select.innerHTML = '';
+  matrizDiv.innerHTML = '';
+  alerta.style.display = 'none';
+
+  const filtroLower = filtro.toLowerCase();
+  const productosFiltrados = filtro
+    ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
+    : [];
+
+  const productosAgrupados = {};
+  productosFiltrados.forEach(p => {
+    if (!productosAgrupados[p.producto]) {
+      productosAgrupados[p.producto] = [];
     }
+    productosAgrupados[p.producto].push(p);
+  });
+
+  // Limpiar set de sucursales agregadas (evita duplicados)
+  const sucursalesAgregadas = new Set();
+
+  for (const nombreProducto in productosAgrupados) {
+    const grupo = document.createElement('div');
+    grupo.className = 'producto-group';
+
+    const header = document.createElement('div');
+    header.className = 'producto-header';
+
+    const flecha = document.createElement('span');
+    flecha.textContent = '▶ ';
+    flecha.className = 'flecha';
+    flecha.style.display = 'inline-block';
+    flecha.style.transition = 'transform 0.2s ease';
+
+    header.appendChild(flecha);
+    header.appendChild(document.createTextNode(nombreProducto));
+
+    const contenedorSucursales = document.createElement('div');
+    contenedorSucursales.className = 'producto-detalle';
+    contenedorSucursales.style.display = 'none';
+
+    productosAgrupados[nombreProducto].forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'sucursal';
+      div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
+      contenedorSucursales.appendChild(div);
+
+      // Solo agregar al select si no se ha agregado aún
+      if (!sucursalesAgregadas.has(s.sucursal)) {
+        sucursalesAgregadas.add(s.sucursal);
+        const opt = document.createElement('option');
+        opt.value = s.sucursal;
+        opt.textContent = s.sucursal;
+        select.appendChild(opt);
+      }
+
+      if (s.sucursal.toLowerCase() === 'casa matriz') {
+        matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
+      }
+
+      if (s.cantidad === 0) {
+        alerta.style.display = 'block';
+        alerta.textContent = `Stock bajo en ${s.sucursal}`;
+      }
+    });
+
+    // Toggle colapsable
+    header.addEventListener('click', () => {
+      const visible = contenedorSucursales.style.display === 'block';
+      contenedorSucursales.style.display = visible ? 'none' : 'block';
+      flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+    });
+
+    grupo.appendChild(header);
+    grupo.appendChild(contenedorSucursales);
+    lista.appendChild(grupo);
   }
+}
+
        
 
       // Separador visual
       const sep = document.createElement('hr');
       lista.appendChild(sep);
-    }
-  }
 
   document.getElementById('buscar').addEventListener('input', e => {
     mostrarProductos(e.target.value);

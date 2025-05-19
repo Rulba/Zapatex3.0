@@ -22,9 +22,10 @@ function mostrarProductos(filtro = '') {
   document.getElementById('alerta-stock').style.display = 'none';
 
   const filtroLower = filtro.toLowerCase();
-  const productosFiltrados = filtro
-    ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
-    : productos;
+const productosFiltrados = filtro.trim()
+  ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
+  : productos;
+
 
   const productosAgrupados = {};
   productosFiltrados.forEach(p => {
