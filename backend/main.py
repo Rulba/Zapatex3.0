@@ -63,30 +63,29 @@ def convertir_usd():
     return jsonify({"usd": usd})
 
 @app.route('/venta', methods=['POST'])
-def procesar_venta():
-    data = request.get_json()
+def venta():
+    data = request.json
     producto = data.get('producto')
-    cantidad = data.get('cantidad')
+    cantidad = int(data.get('cantidad'))
 
-    if not producto or not cantidad:
-        return jsonify({"error": "Faltan datos"}), 400
-
+    # Buscar todas las sucursales con stock del producto
     disponibles = Stock.query.filter(
         Stock.producto == producto,
         Stock.cantidad > 0
-    ).order_by(Stock.sucursal).all()
+    ).order_by(Stock.cantidad.desc()).all()
 
-    stock_total = sum([s.cantidad for s in disponibles])
-    if cantidad > stock_total:
-        return jsonify({"error": "No hay suficiente stock disponible"}), 400
+    total_disponible = sum([s.cantidad for s in disponibles])
+
+    if total_disponible < cantidad:
+        return jsonify({"error": "Stock insuficiente"}), 400
 
     restante = cantidad
-    for stock in disponibles:
+    for s in disponibles:
         if restante == 0:
             break
-        usar = min(stock.cantidad, restante)
-        stock.cantidad -= usar
-        restante -= usar
+        a_descontar = min(s.cantidad, restante)
+        s.cantidad -= a_descontar
+        restante -= a_descontar
 
     db.session.commit()
     return jsonify({"mensaje": "Venta procesada con éxito"})

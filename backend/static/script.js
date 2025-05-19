@@ -154,31 +154,23 @@ document.getElementById('vender').addEventListener('click', async () => {
   const confirmacion = confirm('¿Ir a Transbank para pagar?');
   if (!confirmacion) return;
 
-  const res = await fetch('/iniciar_pago', {
+  const res = await fetch('/venta', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
   });
 
   const data = await res.json();
-  if (data.url && data.token) {
-    // Redirigir a Webpay (modo prueba)
-    const form = document.createElement('form');
-    form.action = data.url;
-    form.method = 'POST';
 
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'token_ws';
-    input.value = data.token;
-    form.appendChild(input);
-
-    document.body.appendChild(form);
-    form.submit();
+  if (res.ok) {
+    alert('✅ Venta exitosa');
+    await cargarDatos(); // recarga stock actualizado
+    document.getElementById('total').textContent = '';
   } else {
-    alert('Error al iniciar el pago.');
+    alert('❌ Error: ' + (data.error || 'Desconocido'));
   }
 });
+
 
 
   const confirmacion = confirm('¿Confirmar pago con Transbank?');

@@ -83,24 +83,32 @@
       encabezado.textContent = nombreProducto;
       lista.appendChild(encabezado);
 
+      const sucursalesAgregadas = new Set();
+
+      const sucursalesAgregadas = new Set();
+
       productosAgrupados[nombreProducto].forEach(s => {
         const div = document.createElement('div');
         div.className = 'sucursal';
         div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
         lista.appendChild(div);
-
-        // Agregar al select si no es casa matriz
-        const opt = document.createElement('option');
+      
+        // Agregar al select solo si la sucursal no ha sido agregada ya
+        if (!sucursalesAgregadas.has(s.sucursal)) {
+          sucursalesAgregadas.add(s.sucursal);
+          const opt = document.createElement('option');
           opt.value = s.sucursal;
           opt.textContent = s.sucursal;
           select.appendChild(opt);
-
+        }
+      
         if (s.cantidad === 0) {
           const alerta = document.getElementById('alerta-stock');
           alerta.style.display = 'block';
           alerta.textContent = `Stock bajo en ${s.sucursal}`;
         }
       });
+//      
 
       // Separador visual
       const sep = document.createElement('hr');
