@@ -5,10 +5,9 @@ async function cargarDatos() {
   const data = await res.json();
 
   productos = [...data.sucursales];
-  if (data.casa_matriz) {
-    productos.push(data.casa_matriz);
-  }
+  if (data.casa_matriz) productos.push(data.casa_matriz);
 
+  window.productos = productos;
   mostrarProductos();
 }
 
@@ -39,7 +38,6 @@ function mostrarProductos(filtro = '') {
     const grupo = document.createElement('div');
     grupo.className = 'producto-group';
 
-    // Header con flecha
     const header = document.createElement('div');
     header.className = 'producto-header';
 
@@ -52,10 +50,11 @@ function mostrarProductos(filtro = '') {
     header.appendChild(flecha);
     header.appendChild(document.createTextNode(nombreProducto));
 
-    // Contenedor de sucursales oculto
     const contenedorSucursales = document.createElement('div');
     contenedorSucursales.className = 'producto-detalle';
     contenedorSucursales.style.display = 'none';
+
+    const sucursalesAgregadas = new Set();
 
     productosAgrupados[nombreProducto].forEach(s => {
       const div = document.createElement('div');
@@ -63,7 +62,8 @@ function mostrarProductos(filtro = '') {
       div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
       contenedorSucursales.appendChild(div);
 
-      if (![...select.options].some(opt => opt.value === s.sucursal)) {
+      if (!sucursalesAgregadas.has(s.sucursal)) {
+        sucursalesAgregadas.add(s.sucursal);
         const opt = document.createElement('option');
         opt.value = s.sucursal;
         opt.textContent = s.sucursal;
@@ -81,7 +81,6 @@ function mostrarProductos(filtro = '') {
       }
     });
 
-    // Toggle visibilidad
     header.addEventListener('click', () => {
       const visible = contenedorSucursales.style.display === 'block';
       contenedorSucursales.style.display = visible ? 'none' : 'block';
@@ -93,9 +92,6 @@ function mostrarProductos(filtro = '') {
     lista.appendChild(grupo);
   }
 }
-
-
-
 
 document.getElementById('buscar').addEventListener('input', e => {
   mostrarProductos(e.target.value);
@@ -111,14 +107,12 @@ document.getElementById('calcular').addEventListener('click', async () => {
   }
 
   const coincidencias = productos.filter(p =>
-    p.producto.toLowerCase() === nombreProducto.toLowerCase() &&
-    p.cantidad > 0
+    p.producto.toLowerCase() === nombreProducto.toLowerCase() && p.cantidad > 0
   );
 
   const stockTotal = coincidencias.reduce((sum, s) => sum + s.cantidad, 0);
-
   if (cantidad > stockTotal) {
-    alert(`No hay suficiente stock disponible. Solo hay ${stockTotal} unidades en total.`);
+    alert(`No hay suficiente stock. Solo hay ${stockTotal} unidades disponibles.`);
     return;
   }
 
@@ -128,7 +122,6 @@ document.getElementById('calcular').addEventListener('click', async () => {
 
   for (const s of coincidencias) {
     if (restante === 0) break;
-
     const usar = Math.min(s.cantidad, restante);
     totalCLP += usar * s.precio;
     detalle.push(`${usar} u. desde ${s.sucursal}`);
@@ -164,32 +157,11 @@ document.getElementById('vender').addEventListener('click', async () => {
 
   if (res.ok) {
     alert('✅ Venta exitosa');
-    await cargarDatos(); // recarga stock actualizado
+    await cargarDatos();
     document.getElementById('total').textContent = '';
   } else {
     alert('❌ Error: ' + (data.error || 'Desconocido'));
   }
 });
-
-
-
-  const confirmacion = confirm('¿Confirmar pago con Transbank?');
-  if (!confirmacion) return;
-
-  const res = await fetch('/venta', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-    alert('✅ Pago exitoso con Transbank.\nStock actualizado.');
-    await cargarDatos();
-    document.getElementById('total').textContent = '';
-  } else {
-    alert('❌ Error en venta: ' + (data.error || 'Desconocido'));
-  }
 
 document.addEventListener('DOMContentLoaded', cargarDatos);
