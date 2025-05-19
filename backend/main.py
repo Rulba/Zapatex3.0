@@ -2,6 +2,8 @@ from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from models import Stock
 from extensions import db
+from flask import request, jsonify, redirect, url_for, render_template
+from transbank_config import tx
 
 
 app = Flask(__name__)
@@ -89,9 +91,7 @@ def procesar_venta():
     db.session.commit()
     return jsonify({"mensaje": "Venta procesada con éxito"})
 
-from flask import redirect, url_for
-from transbank.webpay.webpay_plus.transaction import WebpayPlusTransaction
-from transbank_config import tx
+
 
 @app.route('/iniciar_pago', methods=['POST'])
 def iniciar_pago():
