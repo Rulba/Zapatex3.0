@@ -144,12 +144,42 @@ document.getElementById('calcular').addEventListener('click', async () => {
 
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = document.querySelector('#sucursales-list h3')?.textContent;
+  const nombreProducto = document.querySelector('.producto-header')?.textContent;
 
   if (!nombreProducto) {
     alert('Selecciona un producto válido primero');
     return;
   }
+
+  const confirmacion = confirm('¿Ir a Transbank para pagar?');
+  if (!confirmacion) return;
+
+  const res = await fetch('/iniciar_pago', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
+  });
+
+  const data = await res.json();
+  if (data.url && data.token) {
+    // Redirigir a Webpay (modo prueba)
+    const form = document.createElement('form');
+    form.action = data.url;
+    form.method = 'POST';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'token_ws';
+    input.value = data.token;
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+  } else {
+    alert('Error al iniciar el pago.');
+  }
+});
+
 
   const confirmacion = confirm('¿Confirmar pago con Transbank?');
   if (!confirmacion) return;

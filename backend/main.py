@@ -89,6 +89,40 @@ def procesar_venta():
     db.session.commit()
     return jsonify({"mensaje": "Venta procesada con éxito"})
 
+from flask import redirect, url_for
+from transbank.webpay.webpay_plus.transaction import WebpayPlusTransaction
+from transbank_config import tx
+
+@app.route('/iniciar_pago', methods=['POST'])
+def iniciar_pago():
+    datos = request.json
+    producto = datos.get('producto')
+    cantidad = datos.get('cantidad', 1)
+
+    # Solo para demo, usa un monto fijo (puedes cambiarlo)
+    monto = 1000 * cantidad
+
+    # Identificadores únicos de prueba
+    buy_order = f"pedido-{producto}-{cantidad}"
+    session_id = "session1234"
+    return_url = url_for('resultado_pago', _external=True)
+
+    response = tx.create(buy_order, session_id, monto, return_url)
+    url_webpay = response['url']
+    token = response['token']
+
+    return jsonify({'url': url_webpay, 'token': token})
+
+
+@app.route('/resultado_pago')
+def resultado_pago():
+    token = request.args.get('token_ws')
+    response = tx.commit(token)
+
+    if response['status'] == 'AUTHORIZED':
+        return render_template('pago_exitoso.html', detalle=response)
+    else:
+        return render_template('pago_fallido.html', detalle=response)
 
 
 if __name__ == '__main__':
