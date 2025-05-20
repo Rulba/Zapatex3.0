@@ -82,21 +82,26 @@ def venta():
 def iniciar_pago():
     datos = request.json
     producto = datos.get('producto')
-    cantidad = datos.get('cantidad', 1)
+    cantidad = int(datos.get('cantidad', 1))
 
-    # Solo para demo, usa un monto fijo (puedes cambiarlo)
-    monto = 1000 * cantidad
+    monto = 1000 * cantidad  # Puedes mejorarlo más adelante
 
-    # Identificadores únicos de prueba
     buy_order = f"pedido-{producto}-{cantidad}"
     session_id = "session1234"
     return_url = url_for('resultado_pago', _external=True)
+    try:
+        response = tx.create(buy_order, session_id, monto, return_url)
+        print("✅ Transbank create response:", response)
+    except Exception as e:
+        print("❌ Error en tx.create:", str(e))
+        return jsonify({"error": "Error al contactar Transbank"}), 500
 
-    response = tx.create(buy_order, session_id, monto, return_url)
-    url_webpay = response['url']
-    token = response['token']
+    print("✅ Transbank create response:", response)  # <--- Agrega esto
 
-    return jsonify({'url': url_webpay, 'token': token})
+    return jsonify({
+        "url": response.get("url"),
+        "token": response.get("token")
+    })
 
 
 @app.route('/resultado_pago')

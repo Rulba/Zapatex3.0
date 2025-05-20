@@ -147,40 +147,55 @@ document.getElementById('calcular').addEventListener('click', async () => {
 
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = document.querySelector('.producto-header')?.textContent;
+  const nombreProducto = productoSeleccionado;
 
-  if (!nombreProducto) {
-    alert('Selecciona un producto válido primero');
+  if (!nombreProducto || isNaN(cantidad) || cantidad <= 0) {
+    alert('Selecciona un producto válido y una cantidad mayor a 0');
     return;
   }
 
   const confirmacion = confirm('¿Confirmar pago con Transbank?');
   if (!confirmacion) return;
 
-  // ✅ Enviar solicitud a tu backend para iniciar pago con Transbank
-  const res = await fetch('/iniciar_pago', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
-  });
+  try {
+    const res = await fetch('/iniciar_pago', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
+    });
 
-  const data = await res.json();
+    const text = await res.text(); // primero lo leemos como texto por si no es JSON
 
-  if (data.url && data.token) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = data.url;
+    try {
+      const data = JSON.parse(text); // si es JSON, lo parseamos
+      console.log("✅ Respuesta de iniciar_pago:", data);
 
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'token_ws';
-    input.value = data.token;
+      if (data.url && data.token) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.url;
 
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-  } else {
-    alert('❌ Error iniciando pago con Transbank');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'token_ws';
+        input.value = data.token;
+
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        console.error("❌ Respuesta no contiene token o URL:", data);
+        alert('❌ Error iniciando pago con Transbank (datos incompletos).');
+      }
+
+    } catch (jsonError) {
+      console.error("❌ No se pudo parsear como JSON:", text);
+      alert('❌ Error inesperado del servidor (no es JSON). Revisa consola o servidor.');
+    }
+
+  } catch (error) {
+    console.error("❌ Error en la solicitud de pago:", error);
+    alert('❌ Error al intentar iniciar el pago. Revisa tu conexión o contacta soporte.');
   }
 });
 
