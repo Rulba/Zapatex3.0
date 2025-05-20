@@ -210,3 +210,10 @@ document.getElementById('vender').addEventListener('click', async () => {
 });
 
 document.addEventListener('DOMContentLoaded', cargarDatos);
+
+const evtSource = new EventSource('/sse');
+evtSource.onmessage = function (event) {
+  const alerta = document.getElementById('alerta-stock');
+  alerta.style.display = 'block';
+  alerta.innerText = event.data;
+};
