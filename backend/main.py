@@ -6,7 +6,7 @@ from flask import request, jsonify, redirect, url_for, render_template
 from transbank_config import tx
 
 
-app = Flask(__name__)
+aapp = Flask(__name__, template_folder='templates')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zapatex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
