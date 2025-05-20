@@ -1,4 +1,5 @@
 let productos = [];
+let productoSeleccionado = '';
 
 async function cargarDatos() {
   const res = await fetch('/api/stock');
@@ -82,10 +83,16 @@ function mostrarProductos(filtro = '') {
     });
 
     header.addEventListener('click', () => {
-      const visible = contenedorSucursales.style.display === 'block';
-      contenedorSucursales.style.display = visible ? 'none' : 'block';
-      flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
-    });
+  const visible = contenedorSucursales.style.display === 'block';
+  contenedorSucursales.style.display = visible ? 'none' : 'block';
+  flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+
+  if (!visible) {
+    productoSeleccionado = nombreProducto;  // ← Guardamos el producto seleccionado
+  }
+});
+
+
 
     grupo.appendChild(header);
     grupo.appendChild(contenedorSucursales);
@@ -99,7 +106,8 @@ document.getElementById('buscar').addEventListener('input', e => {
 
 document.getElementById('calcular').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = document.querySelector('.producto-header')?.textContent;
+  const nombreProducto = productoSeleccionado;
+
 
   if (!nombreProducto) {
     alert('Primero busca y selecciona un producto válido');
@@ -139,7 +147,7 @@ document.getElementById('calcular').addEventListener('click', async () => {
 
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = document.querySelector('.producto-header')?.textContent;
+  const nombreProducto = productoSeleccionado;
 
   if (!nombreProducto) {
     alert('Selecciona un producto válido primero');
@@ -149,12 +157,14 @@ document.getElementById('vender').addEventListener('click', async () => {
   const confirmacion = confirm('¿Confirmar pago con Transbank?');
   if (!confirmacion) return;
 
-  const res = await fetch('/venta', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
-  });
-
+const res = await fetch('/venta', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    producto: productoSeleccionado,
+    cantidad: cantidad
+  })
+});
   const data = await res.json();
 
   if (res.ok) {
