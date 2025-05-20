@@ -62,4 +62,8 @@ document.getElementById('vender').addEventListener('click', async () => {
     console.error("❌ Error en la solicitud de pago:", error);
     alert('❌ Error al intentar iniciar el pago. Revisa tu conexión o contacta soporte.');
   }
+
+  document.addEventListener('DOMContentLoaded', cargarDatos);
 });
+
+
