@@ -95,13 +95,36 @@ def iniciar_pago():
 
 @app.route('/resultado_pago_simulado', methods=['POST'])
 def resultado_pago_simulado():
+    producto = request.form.get('producto')
+    cantidad = int(request.form.get('cantidad', 1))
+
+    disponibles = Stock.query.filter(
+        Stock.producto == producto,
+        Stock.cantidad > 0
+    ).order_by(Stock.cantidad.desc()).all()
+
+    total_disponible = sum([s.cantidad for s in disponibles])
+    if total_disponible < cantidad:
+        return render_template('pago_fallido.html', detalle={"status": "FAILED"})
+
+    restante = cantidad
+    for s in disponibles:
+        if restante == 0:
+            break
+        a_descontar = min(s.cantidad, restante)
+        s.cantidad -= a_descontar
+        restante -= a_descontar
+
+    db.session.commit()
+
     return render_template('pago_exitoso.html', detalle={
-        'amount': 1000,
-        'buy_order': 'simulado123',
-        'authorization_code': 'ABC123',
-        'card_detail': {'card_number': '**** **** **** 4242'},
+        'amount': 1000 * cantidad,
+        'buy_order': f'simulado-{producto}-{cantidad}',
+        'authorization_code': 'SIM-123',
+        'card_detail': {'card_number': '**** **** **** 1111'},
         'status': 'AUTHORIZED'
     })
+
 
 #@app.route('/resultado_pago')
 #def resultado_pago():
