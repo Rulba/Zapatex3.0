@@ -15,21 +15,6 @@ db.init_app(app)
 @app.route('/')
 def index():
     return render_template('index.html')
-
-
-@app.route('/vender', methods=['POST'])
-def vender():
-    data = request.json
-    sucursal = data['sucursal']
-    cantidad = data['cantidad']
-
-    stock = Stock.query.filter_by(sucursal=sucursal).first()
-    if stock and stock.cantidad >= cantidad:
-        stock.cantidad -= cantidad
-        db.session.commit()
-        return jsonify({'status': 'ok'})
-    else:
-        return jsonify({'status': 'error', 'message': 'No hay suficiente stock'}), 400
     
 @app.route('/api/stock')
 def get_stock():
@@ -88,6 +73,7 @@ def venta():
         restante -= a_descontar
 
     db.session.commit()
+    print(f"[VENTA] Producto vendido: {producto} - Cantidad: {cantidad}")
     return jsonify({"mensaje": "Venta procesada con éxito"})
 
 
