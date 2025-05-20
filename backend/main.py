@@ -53,17 +53,25 @@ def venta():
     producto = data.get('producto')
     cantidad = int(data.get('cantidad'))
 
-    # Buscar todas las sucursales con stock del producto
+    # Obtener sucursales con stock del producto
     disponibles = Stock.query.filter(
         Stock.producto == producto,
         Stock.cantidad > 0
     ).order_by(Stock.cantidad.desc()).all()
 
     total_disponible = sum([s.cantidad for s in disponibles])
-
     if total_disponible < cantidad:
         return jsonify({"error": "Stock insuficiente"}), 400
 
+    # 👉 Paso 1: Buscar si hay alguna sucursal que pueda cubrir sola la cantidad
+    for sucursal in disponibles:
+        if sucursal.cantidad >= cantidad:
+            sucursal.cantidad -= cantidad
+            db.session.commit()
+            print(f"[VENTA] Producto vendido desde {sucursal.sucursal}: {cantidad} unidades")
+            return jsonify({"mensaje": "Venta desde una sola sucursal realizada con éxito"})
+
+    # 👉 Paso 2: Repartir entre varias si ninguna sola alcanza
     restante = cantidad
     for s in disponibles:
         if restante == 0:
@@ -73,8 +81,8 @@ def venta():
         restante -= a_descontar
 
     db.session.commit()
-    print(f"[VENTA] Producto vendido: {producto} - Cantidad: {cantidad}")
-    return jsonify({"mensaje": "Venta procesada con éxito"})
+    print(f"[VENTA] Producto vendido (repartido): {producto} - Cantidad total: {cantidad}")
+    return jsonify({"mensaje": "Venta repartida entre sucursales realizada con éxito"})
 
 
 
