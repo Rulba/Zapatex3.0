@@ -103,6 +103,46 @@ document.getElementById('buscar').addEventListener('input', e => {
   mostrarProductos(e.target.value);
 });
 
+document.getElementById('calcular').addEventListener('click', async () => {
+  const cantidad = parseInt(document.getElementById('cantidad').value);
+  const nombreProducto = productoSeleccionado;
+
+  if (!nombreProducto || isNaN(cantidad) || cantidad <= 0) {
+    alert('Selecciona un producto válido y una cantidad mayor a 0');
+    return;
+  }
+
+  const coincidencias = productos.filter(p =>
+    p.producto.toLowerCase() === nombreProducto.toLowerCase() &&
+    p.cantidad > 0
+  );
+
+  const stockTotal = coincidencias.reduce((sum, s) => sum + s.cantidad, 0);
+
+  if (cantidad > stockTotal) {
+    alert(`No hay suficiente stock. Solo hay ${stockTotal} unidades disponibles.`);
+    return;
+  }
+
+  let restante = cantidad;
+  let totalCLP = 0;
+  let detalle = [];
+
+  for (const s of coincidencias) {
+    if (restante === 0) break;
+    const usar = Math.min(s.cantidad, restante);
+    totalCLP += usar * s.precio;
+    detalle.push(`${usar} u. desde ${s.sucursal}`);
+    restante -= usar;
+  }
+
+  const res = await fetch(`/api/usd?clp=${totalCLP}`);
+  const data = await res.json();
+
+  document.getElementById('total').innerHTML =
+    `Total: ${totalCLP} CLP | USD: ${data.usd}<br><small>${detalle.join(', ')}</small>`;
+});
+
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
   const nombreProducto = productoSeleccionado;
