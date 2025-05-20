@@ -147,7 +147,7 @@ document.getElementById('calcular').addEventListener('click', async () => {
 
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = productoSeleccionado;
+  const nombreProducto = document.querySelector('.producto-header')?.textContent;
 
   if (!nombreProducto) {
     alert('Selecciona un producto válido primero');
@@ -157,31 +157,30 @@ document.getElementById('vender').addEventListener('click', async () => {
   const confirmacion = confirm('¿Confirmar pago con Transbank?');
   if (!confirmacion) return;
 
-const res = await fetch('/iniciar_pago', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    producto: nombreProducto,
-    cantidad: cantidad
-  })
-});
-
-const data = await res.json();
-if (data.url && data.token) {
-  // Redirigir a Webpay
-  window.location.href = `${data.url}?token_ws=${data.token}`;
-}
+  // ✅ Enviar solicitud a tu backend para iniciar pago con Transbank
+  const res = await fetch('/iniciar_pago', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
+  });
 
   const data = await res.json();
 
-  if (res.ok) {
-    alert('✅ Venta exitosa. Stock actualizado.');
-    await cargarDatos();
-    document.getElementById('total').textContent = '';
+  if (data.url && data.token) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = data.url;
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'token_ws';
+    input.value = data.token;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
   } else {
-    alert('❌ Error: ' + (data.error || 'Desconocido'));
+    alert('❌ Error iniciando pago con Transbank');
   }
 });
 
