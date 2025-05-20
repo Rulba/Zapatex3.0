@@ -103,17 +103,5 @@ def resultado_pago_simulado():
         'status': 'AUTHORIZED'
     })
 
-
-@app.route('/resultado_pago')
-def resultado_pago():
-    token = request.args.get('token_ws')
-    response = tx.commit(token)
-
-    if response['status'] == 'AUTHORIZED':
-        return render_template('pago_exitoso.html', detalle=response)
-    else:
-        return render_template('pago_fallido.html', detalle=response)
-
-
 if __name__ == '__main__':
     app.run(debug=True)

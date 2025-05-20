@@ -1,5 +1,11 @@
-from main import app
-from models import db, Stock
+from flask import Flask
+from extensions import db
+from models import Stock
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zapatex.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
 
 with app.app_context():
     db.drop_all()
@@ -8,26 +14,26 @@ with app.app_context():
     productos = [
         # ZapatoX en distintas sucursales
         Stock(sucursal='Sucursal 1', producto='ZapatoX', cantidad=31, precio=333),
-        Stock(sucursal='Sucursal 2', producto='ZapatoX', cantidad=0, precio=222),  # stock bajo
+        Stock(sucursal='Sucursal 2', producto='ZapatoX', cantidad=0, precio=222),
         Stock(sucursal='Sucursal 3', producto='ZapatoX', cantidad=100, precio=1111),
         Stock(sucursal='Casa Matriz', producto='ZapatoX', cantidad=10, precio=999),
 
-        # Zapatilla Y en distintas sucursales
+        # Zapatilla Y
         Stock(sucursal='Sucursal 1', producto='Zapatilla Y', cantidad=5, precio=700),
         Stock(sucursal='Sucursal 2', producto='Zapatilla Y', cantidad=18, precio=650),
-        Stock(sucursal='Sucursal 3', producto='Zapatilla Y', cantidad=0, precio=699),  # stock bajo
+        Stock(sucursal='Sucursal 3', producto='Zapatilla Y', cantidad=0, precio=699),
         Stock(sucursal='Casa Matriz', producto='Zapatilla Y', cantidad=25, precio=800),
 
-        # BotínZ en distintas sucursales
+        # BotínZ
         Stock(sucursal='Sucursal 1', producto='BotínZ', cantidad=50, precio=1200),
         Stock(sucursal='Sucursal 2', producto='BotínZ', cantidad=40, precio=1150),
         Stock(sucursal='Casa Matriz', producto='BotínZ', cantidad=15, precio=1300),
 
-        # Producto sin Casa Matriz (para ver diferencia)
+        # Sandalia K
         Stock(sucursal='Sucursal 3', producto='Sandalia K', cantidad=30, precio=300),
         Stock(sucursal='Sucursal 1', producto='Sandalia K', cantidad=20, precio=310),
 
-        # Producto solo en Casa Matriz
+        # Zapato Ejecutivo
         Stock(sucursal='Casa Matriz', producto='Zapato Ejecutivo', cantidad=12, precio=1550),
     ]
 

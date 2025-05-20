@@ -5,29 +5,31 @@
   <title>Pago Fallido</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
+      background-color: #ffe5e5;
       text-align: center;
       padding: 50px;
-      background-color: #ffe6e6;
     }
-    .box {
-      background-color: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+    h1 {
+      color: #d8000c;
+    }
+    .detalle {
+      background: #fff0f0;
+      border: 1px solid #d8000c;
+      padding: 20px;
       display: inline-block;
+      margin-top: 20px;
     }
-    h1 { color: red; }
-    p { margin: 8px 0; }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>❌ Pago Rechazado</h1>
-    <p>El pago no fue autorizado por Transbank.</p>
-    <p><strong>Estado:</strong> {{ detalle.status }}</p>
-    <br>
-    <a href="/">Volver a la tienda</a>
+  <h1>❌ Pago Fallido</h1>
+  <p>Tu pago no fue autorizado. Intenta nuevamente o usa otro medio.</p>
+
+  <div class="detalle">
+    <strong>Estado:</strong> {{ detalle.status }}<br>
+    <strong>Orden de compra:</strong> {{ detalle.buy_order or 'N/A' }}<br>
+    <strong>Mensaje:</strong> {{ detalle.error_message or 'No disponible' }}
   </div>
 </body>
 </html>
