@@ -84,23 +84,23 @@ def iniciar_pago():
     producto = datos.get('producto')
     cantidad = int(datos.get('cantidad', 1))
 
-    monto = 1000 * cantidad  # Puedes mejorarlo más adelante
+    # Simula cálculo del total (puedes hacerlo más real si quieres)
+    monto = 1000 * cantidad
 
-    buy_order = f"pedido-{producto}-{cantidad}"
-    session_id = "session1234"
-    return_url = url_for('resultado_pago', _external=True)
-    try:
-        response = tx.create(buy_order, session_id, monto, return_url)
-        print("✅ Transbank create response:", response)
-    except Exception as e:
-        print("❌ Error en tx.create:", str(e))
-        return jsonify({"error": "Error al contactar Transbank"}), 500
-
-    print("✅ Transbank create response:", response)  # <--- Agrega esto
-
+    # Aquí harías normalmente la llamada a Transbank, pero ahora solo simulas
     return jsonify({
-        "url": response.get("url"),
-        "token": response.get("token")
+        "url": "/resultado_pago_simulado",
+        "token": f"token_simulado_{producto}_{cantidad}"
+    })
+
+@app.route('/resultado_pago')
+def resultado_pago_simulado():
+    return render_template('pago_exitoso.html', detalle={
+        'amount': 1000,
+        'buy_order': 'simulado123',
+        'authorization_code': 'ABC123',
+        'card_detail': {'card_number': '**** **** **** 4242'},
+        'status': 'AUTHORIZED'
     })
 
 

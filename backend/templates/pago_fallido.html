@@ -3,10 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <title>Pago Fallido</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background-color: #ffe6e6;
+    }
+    .box {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+      display: inline-block;
+    }
+    h1 { color: red; }
+    p { margin: 8px 0; }
+  </style>
 </head>
 <body>
-  <h1>❌ Pago rechazado</h1>
-  <p>Estado: {{ detalle.status }}</p>
-  <a href="/">Volver al inicio</a>
+  <div class="box">
+    <h1>❌ Pago Rechazado</h1>
+    <p>El pago no fue autorizado por Transbank.</p>
+    <p><strong>Estado:</strong> {{ detalle.status }}</p>
+    <br>
+    <a href="/">Volver a la tienda</a>
+  </div>
 </body>
 </html>

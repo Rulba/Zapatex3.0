@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Pago Exitoso</title>
+    <meta charset="UTF-8">
+    <title>Pago Exitoso</title>
 </head>
 <body>
-  <h1>✅ ¡Pago autorizado!</h1>
-  <p>Transacción ID: {{ detalle.buy_order }}</p>
-  <a href="/">Volver al inicio</a>
+    <h1>✅ Pago Autorizado</h1>
+    <p>Gracias por su compra.</p>
+    <p>Orden: {{ detalle.buy_order }}</p>
+    <p>Monto: {{ detalle.amount }}</p>
+    <p>Autorización: {{ detalle.authorization_code }}</p>
+    <p>Tarjeta: {{ detalle.card_detail.card_number }}</p>
+    <a href="/">Volver a la tienda</a>
 </body>
 </html>
