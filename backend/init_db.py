@@ -26,7 +26,7 @@ with app.app_context():
 
         # BotínZ
         Stock(sucursal='Sucursal 1', producto='BotínZ', cantidad=50, precio=1200),
-        Stock(sucursal='Sucursal 2', producto='BotínZ', cantidad=40, precio=1150),
+        Stock(sucursal='Sucursal 2', producto='BotínZ', cantidad=0, precio=1150),
         Stock(sucursal='Casa Matriz', producto='BotínZ', cantidad=15, precio=1300),
 
         # Sandalia K

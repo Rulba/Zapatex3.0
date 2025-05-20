@@ -151,21 +151,6 @@ def resultado_pago_simulado():
         print("❌ Error al procesar el resultado del pago:", e)
         return "Error al procesar el pago", 500
 
-import time
-from flask import Response
-
-@app.route('/sse')
-def sse():
-    def stream():
-        while True:
-            stocks = Stock.query.filter(Stock.cantidad == 0).all()
-            if stocks:
-                productos_bajos = ', '.join(f"{s.producto} en {s.sucursal}" for s in stocks)
-                yield f"data: Stock bajo: {productos_bajos}\n\n"
-            time.sleep(5)  # espera 5 segundos entre cada verificación
-
-    return Response(stream(), mimetype='text/event-stream')
-
 
 if __name__ == '__main__':
     app.run(debug=True)
