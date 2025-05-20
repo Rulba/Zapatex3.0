@@ -1,9 +1,6 @@
 from transbank.webpay.webpay_plus.transaction import Transaction
-from transbank.common.integration_type import IntegrationType
+from transbank.webpay.webpay_plus.configuration import Configuration
+from transbank.common.environment import Environment
 
-# Configuración global
-Transaction.commerce_code = '597055555532'
-Transaction.api_key = '1234567890'
-Transaction.integration_type = IntegrationType.TEST
-
+Configuration.for_testing_webpay_plus()
 tx = Transaction()

@@ -157,14 +157,23 @@ document.getElementById('vender').addEventListener('click', async () => {
   const confirmacion = confirm('¿Confirmar pago con Transbank?');
   if (!confirmacion) return;
 
-const res = await fetch('/venta', {
+const res = await fetch('/iniciar_pago', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json'
+  },
   body: JSON.stringify({
-    producto: productoSeleccionado,
+    producto: nombreProducto,
     cantidad: cantidad
   })
 });
+
+const data = await res.json();
+if (data.url && data.token) {
+  // Redirigir a Webpay
+  window.location.href = `${data.url}?token_ws=${data.token}`;
+}
+
   const data = await res.json();
 
   if (res.ok) {
