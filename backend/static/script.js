@@ -1,150 +1,3 @@
-let productos = [];
-let productoSeleccionado = '';
-
-async function cargarDatos() {
-  const res = await fetch('/api/stock');
-  const data = await res.json();
-
-  productos = [...data.sucursales];
-  if (data.casa_matriz) productos.push(data.casa_matriz);
-
-  window.productos = productos;
-  mostrarProductos();
-}
-
-function mostrarProductos(filtro = '') {
-  const lista = document.getElementById('sucursales-list');
-  const select = document.getElementById('sucursal');
-  const matrizDiv = document.getElementById('casa-matriz');
-  const alerta = document.getElementById('alerta-stock');
-
-  lista.innerHTML = '';
-  select.innerHTML = '';
-  matrizDiv.innerHTML = '';
-  alerta.style.display = 'none';
-
-  const filtroLower = filtro.toLowerCase();
-  const productosFiltrados = filtro.trim()
-    ? productos.filter(p => p.producto.toLowerCase().includes(filtroLower))
-    : productos;
-
-  const productosAgrupados = {};
-  productosFiltrados.forEach(p => {
-    if (!productosAgrupados[p.producto]) {
-      productosAgrupados[p.producto] = [];
-    }
-    productosAgrupados[p.producto].push(p);
-  });
-
-  const sucursalesAgregadas = new Set();
-
-  for (const nombreProducto in productosAgrupados) {
-    const grupo = document.createElement('div');
-    grupo.className = 'producto-group';
-
-    const header = document.createElement('div');
-    header.className = 'producto-header';
-
-    const flecha = document.createElement('span');
-    flecha.textContent = '▶ ';
-    flecha.className = 'flecha';
-    flecha.style.display = 'inline-block';
-    flecha.style.transition = 'transform 0.2s ease';
-
-    header.appendChild(flecha);
-    header.appendChild(document.createTextNode(nombreProducto));
-
-    const contenedorSucursales = document.createElement('div');
-    contenedorSucursales.className = 'producto-detalle';
-    contenedorSucursales.style.display = 'none';
-
-    productosAgrupados[nombreProducto].forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'sucursal';
-      div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
-      contenedorSucursales.appendChild(div);
-
-      if (!sucursalesAgregadas.has(s.sucursal)) {
-        sucursalesAgregadas.add(s.sucursal);
-        const opt = document.createElement('option');
-        opt.value = s.sucursal;
-        opt.textContent = s.sucursal;
-        select.appendChild(opt);
-      }
-
-      if (s.sucursal.toLowerCase() === 'casa matriz') {
-        matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
-      }
-
-      if (s.cantidad === 0) {
-        alerta.style.display = 'block';
-        alerta.textContent = `Stock bajo en ${s.sucursal}`;
-      }
-    });
-
-    header.addEventListener('click', () => {
-  const visible = contenedorSucursales.style.display === 'block';
-  contenedorSucursales.style.display = visible ? 'none' : 'block';
-  flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
-
-  if (!visible) {
-    productoSeleccionado = nombreProducto;  // ← Guardamos el producto seleccionado
-  }
-});
-
-
-
-    grupo.appendChild(header);
-    grupo.appendChild(contenedorSucursales);
-    lista.appendChild(grupo);
-  }
-}
-
-document.getElementById('buscar').addEventListener('input', e => {
-  mostrarProductos(e.target.value);
-});
-
-document.getElementById('calcular').addEventListener('click', async () => {
-  const cantidad = parseInt(document.getElementById('cantidad').value);
-  const nombreProducto = productoSeleccionado;
-
-
-  if (!nombreProducto) {
-    alert('Primero busca y selecciona un producto válido');
-    return;
-  }
-
-  const coincidencias = productos.filter(p =>
-    p.producto.toLowerCase() === nombreProducto.toLowerCase() &&
-    p.cantidad > 0
-  );
-
-  const stockTotal = coincidencias.reduce((sum, s) => sum + s.cantidad, 0);
-
-  if (cantidad > stockTotal) {
-    alert(`No hay suficiente stock. Solo hay ${stockTotal} unidades disponibles.`);
-    return;
-  }
-
-  let restante = cantidad;
-  let totalCLP = 0;
-  let detalle = [];
-
-  for (const s of coincidencias) {
-    if (restante === 0) break;
-    const usar = Math.min(s.cantidad, restante);
-    totalCLP += usar * s.precio;
-    detalle.push(`${usar} u. desde ${s.sucursal}`);
-    restante -= usar;
-  }
-
-  const res = await fetch(`/api/usd?clp=${totalCLP}`);
-  const data = await res.json();
-
-  document.getElementById('total').innerHTML =
-    `Total: ${totalCLP} CLP | USD: ${data.usd}<br><small>${detalle.join(', ')}</small>`;
-});
-
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
   const nombreProducto = productoSeleccionado;
@@ -175,12 +28,24 @@ document.getElementById('vender').addEventListener('click', async () => {
         form.method = 'POST';
         form.action = data.url;
 
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'token_ws';
-        input.value = data.token;
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = 'token_ws';
+        tokenInput.value = data.token;
+        form.appendChild(tokenInput);
 
-        form.appendChild(input);
+        const productoInput = document.createElement('input');
+        productoInput.type = 'hidden';
+        productoInput.name = 'producto';
+        productoInput.value = nombreProducto;
+        form.appendChild(productoInput);
+
+        const cantidadInput = document.createElement('input');
+        cantidadInput.type = 'hidden';
+        cantidadInput.name = 'cantidad';
+        cantidadInput.value = cantidad;
+        form.appendChild(cantidadInput);
+
         document.body.appendChild(form);
         form.submit();
       } else {
@@ -198,5 +63,3 @@ document.getElementById('vender').addEventListener('click', async () => {
     alert('❌ Error al intentar iniciar el pago. Revisa tu conexión o contacta soporte.');
   }
 });
-
-document.addEventListener('DOMContentLoaded', cargarDatos);
