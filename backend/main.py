@@ -93,7 +93,7 @@ def iniciar_pago():
         "token": f"token_simulado_{producto}_{cantidad}"
     })
 
-@app.route('/resultado_pago')
+@app.route('/resultado_pago_simulado', methods=['POST'])
 def resultado_pago_simulado():
     return render_template('pago_exitoso.html', detalle={
         'amount': 1000,
@@ -102,6 +102,24 @@ def resultado_pago_simulado():
         'card_detail': {'card_number': '**** **** **** 4242'},
         'status': 'AUTHORIZED'
     })
+
+#@app.route('/resultado_pago')
+#def resultado_pago():
+    token = request.args.get('token_ws')
+    try:
+        response = tx.commit(token)
+
+        print("✅ Resultado pago:", response)
+
+        if response['status'] == 'AUTHORIZED':
+            return render_template('pago_exitoso.html', detalle=response)
+        else:
+            return render_template('pago_fallido.html', detalle=response)
+
+    except Exception as e:
+        print("❌ Error al procesar el resultado del pago:", e)
+        return "Error al procesar el pago", 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
