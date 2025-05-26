@@ -4,6 +4,8 @@ from models import Stock
 from extensions import db
 from flask import request, jsonify, redirect, url_for, render_template
 from transbank_config import tx
+import requests
+from datetime import datetime, timedelta
 
 
 app = Flask(__name__, template_folder='templates')
@@ -11,6 +13,34 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zapatex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# Cache simple para evitar múltiples llamadas a la API
+tasa_cache = {
+    "valor": None,
+    "ultima_actualizacion": None
+}
+
+def obtener_tasa_cambio():
+    url = "https://api.exchangerate.host/latest"
+    params = {"base": "CLP", "symbols": "USD"}
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        tasa = data["rates"]["USD"]
+        return tasa
+    except Exception as e:
+        print(f"Error al obtener tasa de cambio: {e}")
+        return 0.0011  # Valor de respaldo si falla
+
+def obtener_tasa_cambio_cached():
+    ahora = datetime.now()
+    if tasa_cache["valor"] is None or (ahora - tasa_cache["ultima_actualizacion"]) > timedelta(minutes=30):
+        tasa_cache["valor"] = obtener_tasa_cambio()
+        tasa_cache["ultima_actualizacion"] = ahora
+    return tasa_cache["valor"]
+
 
 @app.route('/')
 def index():
@@ -43,9 +73,10 @@ def get_stock():
 @app.route('/api/usd')
 def convertir_usd():
     clp = float(request.args.get('clp', 0))
-    tasa = 900  # puedes cambiar esto por una API real después
-    usd = round(clp / tasa, 2)
+    tasa = obtener_tasa_cambio_cached()
+    usd = round(clp * tasa, 2)
     return jsonify({"usd": usd})
+
 
 @app.route('/venta', methods=['POST'])
 def venta():
