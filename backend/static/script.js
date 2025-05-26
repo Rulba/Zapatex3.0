@@ -2,16 +2,22 @@ let productos = [];
 let productoSeleccionado = '';
 
 async function cargarDatos() {
-  const res = await fetch('/api/stock');
-  const data = await res.json();
+  try {
+    const res = await fetch('/api/stock');
+    if (!res.ok) throw new Error(`Error al cargar stock: ${res.status}`);
+    const data = await res.json();
 
-  productos = [...data.sucursales];
-  if (data.casa_matriz) productos.push(data.casa_matriz);
+    productos = [...data.sucursales];
+    if (data.casa_matriz) productos.push(data.casa_matriz);
 
-  window.productos = productos;
-  console.log("✅ Productos cargados:", window.productos);
+    window.productos = productos;
+    console.log("✅ Productos cargados:", window.productos);
 
-  mostrarProductos();
+    mostrarProductos();
+  } catch (error) {
+    alert('Error cargando productos. Revisa consola.');
+    console.error(error);
+  }
 }
 
 function mostrarProductos(filtro = '') {
@@ -24,6 +30,7 @@ function mostrarProductos(filtro = '') {
   select.innerHTML = '';
   matrizDiv.innerHTML = '';
   alerta.style.display = 'none';
+  alerta.textContent = '';
 
   const filtroLower = filtro.toLowerCase();
   const productosFiltrados = filtro.trim()
@@ -44,8 +51,18 @@ function mostrarProductos(filtro = '') {
     const grupo = document.createElement('div');
     grupo.className = 'producto-group';
 
+    if (nombreProducto === productoSeleccionado) {
+      grupo.classList.add('seleccionado');
+      grupo.style.backgroundColor = '#eef6ff';
+      grupo.style.border = '1px solid #3399ff';
+    } else {
+      grupo.style.backgroundColor = '';
+      grupo.style.border = '';
+    }
+
     const header = document.createElement('div');
     header.className = 'producto-header';
+    header.style.cursor = 'pointer';
 
     const flecha = document.createElement('span');
     flecha.textContent = '▶ ';
@@ -53,12 +70,17 @@ function mostrarProductos(filtro = '') {
     flecha.style.display = 'inline-block';
     flecha.style.transition = 'transform 0.2s ease';
 
+    // Si este producto está seleccionado, rotamos la flecha
+    if (nombreProducto === productoSeleccionado) {
+      flecha.style.transform = 'rotate(90deg)';
+    }
+
     header.appendChild(flecha);
     header.appendChild(document.createTextNode(nombreProducto));
 
     const contenedorSucursales = document.createElement('div');
     contenedorSucursales.className = 'producto-detalle';
-    contenedorSucursales.style.display = 'none';
+    contenedorSucursales.style.display = (nombreProducto === productoSeleccionado) ? 'block' : 'none';
 
     productosAgrupados[nombreProducto].forEach(s => {
       const div = document.createElement('div');
@@ -78,24 +100,48 @@ function mostrarProductos(filtro = '') {
         matrizDiv.textContent = `Cant: ${s.cantidad} | Precio: ${s.precio}`;
       }
 
-      if (s.cantidad === 0) {
+      if (s.cantidad <= 2) {
         alerta.style.display = 'block';
-        alerta.textContent = `Stock bajo en ${s.sucursal}`;
+        alerta.textContent = `⚠️ Stock bajo en ${s.sucursal}: quedan ${s.cantidad} unidades.`;
       }
     });
 
     header.addEventListener('click', () => {
       const visible = contenedorSucursales.style.display === 'block';
-      contenedorSucursales.style.display = visible ? 'none' : 'block';
-      flecha.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
-      if (!visible) {
+
+      // Si estaba visible, lo cerramos y deseleccionamos
+      if (visible) {
+        contenedorSucursales.style.display = 'none';
+        flecha.style.transform = 'rotate(0deg)';
+        productoSeleccionado = '';
+      } else {
+        // Si no estaba visible, abrimos solo este, cerrando otros
         productoSeleccionado = nombreProducto;
       }
+
+      // Vuelve a renderizar para actualizar todo el estado (flechas, resaltado, detalle)
+      mostrarProductos(document.getElementById('buscar').value);
+
+      actualizarBotones();
     });
 
     grupo.appendChild(header);
     grupo.appendChild(contenedorSucursales);
     lista.appendChild(grupo);
+  }
+
+  actualizarBotones();
+}
+
+function actualizarBotones() {
+  const btnCalcular = document.getElementById('calcular');
+  const btnVender = document.getElementById('vender');
+  if (productoSeleccionado) {
+    btnCalcular.disabled = false;
+    btnVender.disabled = false;
+  } else {
+    btnCalcular.disabled = true;
+    btnVender.disabled = true;
   }
 }
 
@@ -136,11 +182,17 @@ document.getElementById('calcular').addEventListener('click', async () => {
     restante -= usar;
   }
 
-  const res = await fetch(`/api/usd?clp=${totalCLP}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`/api/usd?clp=${totalCLP}`);
+    if (!res.ok) throw new Error(`Error en conversión USD: ${res.status}`);
+    const data = await res.json();
 
-  document.getElementById('total').innerHTML =
-    `Total: ${totalCLP} CLP | USD: ${data.usd}<br><small>${detalle.join(', ')}</small>`;
+    document.getElementById('total').innerHTML =
+      `Total: ${totalCLP} CLP | USD: ${data.usd}<br><small>${detalle.join(', ')}</small>`;
+  } catch (error) {
+    alert('Error obteniendo tipo de cambio USD. Revisa consola.');
+    console.error(error);
+  }
 });
 
 document.getElementById('vender').addEventListener('click', async () => {

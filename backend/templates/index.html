@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <title>Zapatex - Venta</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <style>
-  </style>
 </head>
 <body>
   <h1>Venta Zapatex</h1>
 
   <label for="buscar">Buscar producto:</label>
   <input type="text" id="buscar" placeholder="Escribe producto..." />
+
+  <p id="cargando" style="display: none;">Cargando productos...</p>
 
   <div id="sucursales-list"></div>
 
@@ -23,21 +23,19 @@
   <label for="sucursal">Sucursales:</label>
   <select id="sucursal"></select>
 
-  <div id="cantidad-total">
+  <div class="acciones">
     <div>
       <label for="cantidad">Cantidad:</label>
       <input type="number" id="cantidad" min="1" value="1">
     </div>
     <button id="calcular">Calcular Total USD</button>
+    <button id="vender">Venta</button>
   </div>
 
   <p id="total"></p>
 
-  <button id="vender">Venta</button>
-
   <div id="alerta-stock"></div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
