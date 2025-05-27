@@ -14,7 +14,6 @@ marshmallow==3.17.0
 packaging==25.0
 requests==2.32.3
 SQLAlchemy==2.0.41
-transbank-sdk @ git+https://github.com/TransbankDevelopers/transbank-sdk-python.git@a937bfcedaf27be06ab8f675f6c8e8ba39842aa5
 typing_extensions==4.13.2
 urllib3==2.4.0
 Werkzeug==3.1.3
