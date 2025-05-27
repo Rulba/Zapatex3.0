@@ -1,6 +1,9 @@
 from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.options import WebpayOptions
 from transbank.common.integration_type import IntegrationType
+from transbank.webpay.webpay_plus import WebpayPlus
+
+tx = WebpayPlus()
 
 # Configuración para entorno de pruebas
 tx = Transaction(WebpayOptions(
