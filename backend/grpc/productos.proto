@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package zapatex;
+
+message Producto {
+  int32 id = 1;
+  string nombre = 2;
+  float precio = 3;
+  string imagen_base64 = 4;
+}
+
+message Respuesta {
+  string mensaje = 1;
+  bool exito = 2;
+}
+
+service ProductoService {
+  rpc GuardarProducto(Producto) returns (Respuesta);
+}
