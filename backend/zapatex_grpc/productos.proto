@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package productos;
+
+service ProductoService {
+  rpc AgregarProducto (ProductoRequest) returns (ProductoResponse);
+  rpc ObtenerProducto (ProductoID) returns (ProductoResponse);
+  rpc ListarProductos (Empty) returns (ListaProductos);
+}
+
+message ProductoRequest {
+  int32 id = 1;
+  string nombre = 2;
+  float precio = 3;
+  string imagen_base64 = 4;
+  repeated StockPorSucursal stock = 5;
+}
+
+message StockPorSucursal {
+  string sucursal = 1;
+  int32 cantidad = 2;
+}
+
+message ProductoResponse {
+  bool exito = 1;
+  string mensaje = 2;
+  ProductoRequest producto = 3;
+}
+
+message ProductoID {
+  int32 id = 1;
+}
+
+message ListaProductos {
+  repeated ProductoRequest productos = 1;
+}
+
+message Empty {}
