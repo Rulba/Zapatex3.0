@@ -3,6 +3,7 @@
 import grpc
 import warnings
 
+import productos_pb2 as productos__pb2
 
 GRPC_GENERATED_VERSION = '1.73.0'
 GRPC_VERSION = grpc.__version__
@@ -22,3 +23,161 @@ if _version_not_supported:
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
+
+
+class ProductoServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.AgregarProducto = channel.unary_unary(
+                '/productos.ProductoService/AgregarProducto',
+                request_serializer=productos__pb2.ProductoRequest.SerializeToString,
+                response_deserializer=productos__pb2.ProductoResponse.FromString,
+                _registered_method=True)
+        self.ObtenerProducto = channel.unary_unary(
+                '/productos.ProductoService/ObtenerProducto',
+                request_serializer=productos__pb2.ProductoID.SerializeToString,
+                response_deserializer=productos__pb2.ProductoResponse.FromString,
+                _registered_method=True)
+        self.ListarProductos = channel.unary_unary(
+                '/productos.ProductoService/ListarProductos',
+                request_serializer=productos__pb2.Empty.SerializeToString,
+                response_deserializer=productos__pb2.ListaProductos.FromString,
+                _registered_method=True)
+
+
+class ProductoServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def AgregarProducto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ObtenerProducto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListarProductos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_ProductoServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'AgregarProducto': grpc.unary_unary_rpc_method_handler(
+                    servicer.AgregarProducto,
+                    request_deserializer=productos__pb2.ProductoRequest.FromString,
+                    response_serializer=productos__pb2.ProductoResponse.SerializeToString,
+            ),
+            'ObtenerProducto': grpc.unary_unary_rpc_method_handler(
+                    servicer.ObtenerProducto,
+                    request_deserializer=productos__pb2.ProductoID.FromString,
+                    response_serializer=productos__pb2.ProductoResponse.SerializeToString,
+            ),
+            'ListarProductos': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListarProductos,
+                    request_deserializer=productos__pb2.Empty.FromString,
+                    response_serializer=productos__pb2.ListaProductos.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'productos.ProductoService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('productos.ProductoService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class ProductoService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def AgregarProducto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/productos.ProductoService/AgregarProducto',
+            productos__pb2.ProductoRequest.SerializeToString,
+            productos__pb2.ProductoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ObtenerProducto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/productos.ProductoService/ObtenerProducto',
+            productos__pb2.ProductoID.SerializeToString,
+            productos__pb2.ProductoResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListarProductos(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/productos.ProductoService/ListarProductos',
+            productos__pb2.Empty.SerializeToString,
+            productos__pb2.ListaProductos.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

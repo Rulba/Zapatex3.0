@@ -8,6 +8,7 @@ service ProductoService {
   rpc ListarProductos (Empty) returns (ListaProductos);
 }
 
+
 message ProductoRequest {
   int32 id = 1;
   string nombre = 2;

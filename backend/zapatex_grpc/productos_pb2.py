@@ -24,11 +24,25 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fproductos.proto')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fproductos.proto\x12\tproductos\"\x80\x01\n\x0fProductoRequest\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0e\n\x06nombre\x18\x02 \x01(\t\x12\x0e\n\x06precio\x18\x03 \x01(\x02\x12\x15\n\rimagen_base64\x18\x04 \x01(\t\x12*\n\x05stock\x18\x05 \x03(\x0b\x32\x1b.productos.StockPorSucursal\"6\n\x10StockPorSucursal\x12\x10\n\x08sucursal\x18\x01 \x01(\t\x12\x10\n\x08\x63\x61ntidad\x18\x02 \x01(\x05\"`\n\x10ProductoResponse\x12\r\n\x05\x65xito\x18\x01 \x01(\x08\x12\x0f\n\x07mensaje\x18\x02 \x01(\t\x12,\n\x08producto\x18\x03 \x01(\x0b\x32\x1a.productos.ProductoRequest\"\x18\n\nProductoID\x12\n\n\x02id\x18\x01 \x01(\x05\"?\n\x0eListaProductos\x12-\n\tproductos\x18\x01 \x03(\x0b\x32\x1a.productos.ProductoRequest\"\x07\n\x05\x45mpty2\xe4\x01\n\x0fProductoService\x12J\n\x0f\x41gregarProducto\x12\x1a.productos.ProductoRequest\x1a\x1b.productos.ProductoResponse\x12\x45\n\x0fObtenerProducto\x12\x15.productos.ProductoID\x1a\x1b.productos.ProductoResponse\x12>\n\x0fListarProductos\x12\x10.productos.Empty\x1a\x19.productos.ListaProductosb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'productos_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_PRODUCTOREQUEST']._serialized_start=31
+  _globals['_PRODUCTOREQUEST']._serialized_end=159
+  _globals['_STOCKPORSUCURSAL']._serialized_start=161
+  _globals['_STOCKPORSUCURSAL']._serialized_end=215
+  _globals['_PRODUCTORESPONSE']._serialized_start=217
+  _globals['_PRODUCTORESPONSE']._serialized_end=313
+  _globals['_PRODUCTOID']._serialized_start=315
+  _globals['_PRODUCTOID']._serialized_end=339
+  _globals['_LISTAPRODUCTOS']._serialized_start=341
+  _globals['_LISTAPRODUCTOS']._serialized_end=404
+  _globals['_EMPTY']._serialized_start=406
+  _globals['_EMPTY']._serialized_end=413
+  _globals['_PRODUCTOSERVICE']._serialized_start=416
+  _globals['_PRODUCTOSERVICE']._serialized_end=644
 # @@protoc_insertion_point(module_scope)
