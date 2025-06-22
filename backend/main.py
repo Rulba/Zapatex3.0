@@ -5,6 +5,18 @@ from extensions import db
 from transbank_config import tx
 import requests
 from datetime import datetime, timedelta
+import grpc
+import sys
+import os
+
+# Ruta a zapatex_grpc dentro de backend
+grpc_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'zapatex_grpc'))
+print(f"Agregando ruta: {grpc_path}")
+sys.path.insert(0, grpc_path)
+
+
+import productos_pb2
+import productos_pb2_grpc
 
 app = Flask(__name__, template_folder='templates')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zapatex.db'
@@ -25,11 +37,10 @@ def obtener_tasa_cambio():
         return data["rates"]["USD"]
     except Exception as e:
         print(f"Error al obtener tasa de cambio: {e}")
-        # Valor fallback (revisar si es correcto)
         return 0.0011
 
 def obtener_tasa_cambio_cached():
-    ahora = datetime.utcnow()  # Mejor usar UTC
+    ahora = datetime.utcnow()
     if (
         tasa_cache["valor"] is None or 
         (ahora - tasa_cache["ultima_actualizacion"]) > timedelta(minutes=30)
@@ -42,6 +53,10 @@ def obtener_tasa_cambio_cached():
 def index():
     return render_template('index.html')
 
+@app.route('/agregar_producto')
+def agregar_producto():
+    return render_template('agregar_producto.html')
+
 @app.route('/api/stock')
 def get_stock():
     sucursales = []
@@ -53,7 +68,8 @@ def get_stock():
             "producto": s.producto,
             "sucursal": s.sucursal,
             "cantidad": s.cantidad,
-            "precio": s.precio
+            "precio": s.precio,
+            "imagen_base64": s.imagen_base64 if s.imagen_base64 else ""
         }
         if s.sucursal.lower() == "casa matriz":
             casa_matriz = info
@@ -161,7 +177,6 @@ def resultado_pago():
         print("✅ Resultado pago:", response)
 
         if response.status == 'AUTHORIZED':
-            # Aquí podrías actualizar stock, enviar email, etc.
             return render_template('pago_exitoso.html', detalle=response)
         else:
             return render_template('pago_fallido.html', detalle=response)
@@ -170,6 +185,45 @@ def resultado_pago():
         print("❌ Error al procesar el resultado del pago:", e)
         return "Error al procesar el pago", 500
 
+@app.route('/api/agregar_producto', methods=['POST'])
+def api_agregar_producto():
+    data = request.get_json()
+
+    try:
+        nombre = data['nombre']
+        precio = float(data['precio'])
+        tipo = data['tipo']
+        imagen_base64 = data['imagen_base64']
+        stock_dict = data['stock']
+
+        stock_items = [
+            productos_pb2.StockPorSucursal(sucursal=s, cantidad=c)
+            for s, c in stock_dict.items()
+        ]
+
+        import time
+        producto_id = int(time.time())
+
+        request_grpc = productos_pb2.ProductoRequest(
+            id=producto_id,
+            nombre=nombre,
+            precio=precio,
+            imagen_base64=imagen_base64,
+            stock=stock_items
+        )
+
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+            response = stub.AgregarProducto(request_grpc)
+
+        if response.exito:
+            return jsonify({"mensaje": "Producto agregado correctamente", "producto_id": producto_id}), 200
+        else:
+            return jsonify({"error": response.mensaje}), 400
+
+    except Exception as e:
+        print("❌ Error al agregar producto vía Flask → gRPC:", e)
+        return jsonify({"error": "Error interno al procesar el producto"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agregar Producto - Zapatex</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      max-width: 600px;
+      margin: auto;
+      font-family: Arial, sans-serif;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      margin-top: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    input, textarea, button {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Agregar Producto</h1>
+
+  <form id="form-producto">
+    <label for="nombre">Nombre:</label>
+    <input type="text" id="nombre" name="nombre" required>
+
+    <label for="precio">Precio:</label>
+    <input type="number" id="precio" name="precio" required>
+
+    <label for="tipo">Tipo de Zapato:</label>
+    <input type="text" id="tipo" name="tipo" required>
+
+    <label for="stock">Stock por Sucursal (JSON):</label>
+    <textarea id="stock" name="stock" placeholder='{"Centro": 10, "Norte": 5}' required></textarea>
+
+    <label for="imagen">Imagen:</label>
+    <input type="file" id="imagen" name="imagen" accept="image/*" required>
+
+    <input type="hidden" id="imagen_base64" name="imagen_base64">
+
+    <button type="submit">Guardar Producto</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('form-producto');
+    const imagenInput = document.getElementById('imagen');
+    const imagenBase64 = document.getElementById('imagen_base64');
+
+    // Convertir imagen a base64 cuando seleccionan archivo
+    imagenInput.addEventListener('change', () => {
+      const file = imagenInput.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        imagenBase64.value = reader.result.split(',')[1]; // solo base64
+      };
+      if (file) {
+        reader.readAsDataURL(file);
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const producto = {
+        nombre: form.nombre.value,
+        precio: parseFloat(form.precio.value),
+        tipo: form.tipo.value,
+        stock: JSON.parse(form.stock.value),
+        imagen_base64: imagenBase64.value
+      };
+
+      try {
+        const res = await fetch('/api/agregar_producto', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(producto)
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+          alert("✅ Producto agregado correctamente.");
+          form.reset();
+          imagenBase64.value = '';
+        } else {
+          alert("❌ Error: " + result.error);
+        }
+      } catch (error) {
+        alert("❌ Error al enviar el producto.");
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

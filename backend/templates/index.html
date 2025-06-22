@@ -4,9 +4,23 @@
   <meta charset="UTF-8">
   <title>Zapatex - Venta</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .boton-agregar {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
   <h1>Venta Zapatex</h1>
+
+  <!-- ✅ Botón agregado -->
+  <a href="/agregar_producto" class="boton-agregar">+ Agregar Producto</a>
 
   <label for="buscar">Buscar producto:</label>
   <input type="text" id="buscar" placeholder="Escribe producto..." />
