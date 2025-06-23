@@ -2,116 +2,108 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Agregar Producto - Zapatex</title>
+  <title>Agregar Producto</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    body {
+    .formulario {
       max-width: 600px;
       margin: auto;
-      font-family: Arial, sans-serif;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
     }
-    h1 {
-      text-align: center;
-    }
-    form {
-      margin-top: 20px;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-    input, textarea, button {
+    .formulario input, .formulario button {
       width: 100%;
+      margin: 10px 0;
       padding: 8px;
-      margin-bottom: 15px;
-      box-sizing: border-box;
     }
-    button {
-      background-color: #4CAF50;
+    .volver {
+      display: inline-block;
+      margin: 15px;
+      padding: 8px 12px;
+      background: #888;
       color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
+      text-decoration: none;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
-  <h1>Agregar Producto</h1>
+  <a href="/" class="volver">← Volver a la tienda</a>
 
-  <form id="form-producto">
-    <label for="nombre">Nombre:</label>
-    <input type="text" id="nombre" name="nombre" required>
+  <div class="formulario">
+    <h2>Agregar Producto</h2>
+    <input type="text" id="nombre" placeholder="Nombre del producto" required />
+    <input type="number" id="precio" placeholder="Precio CLP" required />
+    <input type="text" id="tipo" placeholder="Tipo de producto (opcional)" />
 
-    <label for="precio">Precio:</label>
-    <input type="number" id="precio" name="precio" required>
+    <h4>Stock por sucursal</h4>
+    <input type="number" id="stock1" placeholder="Sucursal 1 - Cantidad" />
+    <input type="number" id="stock2" placeholder="Sucursal 2 - Cantidad" />
+    <input type="number" id="stock3" placeholder="Sucursal 3 - Cantidad" />
+    <input type="number" id="matriz" placeholder="Casa Matriz - Cantidad" />
 
-    <label for="tipo">Tipo de Zapato:</label>
-    <input type="text" id="tipo" name="tipo" required>
+    <label>Imagen del producto</label>
+    <input type="file" id="imagen" accept="image/*" />
 
-    <label for="stock">Stock por Sucursal (JSON):</label>
-    <textarea id="stock" name="stock" placeholder='{"Centro": 10, "Norte": 5}' required></textarea>
-
-    <label for="imagen">Imagen:</label>
-    <input type="file" id="imagen" name="imagen" accept="image/*" required>
-
-    <input type="hidden" id="imagen_base64" name="imagen_base64">
-
-    <button type="submit">Guardar Producto</button>
-  </form>
+    <button onclick="guardarProducto()">Guardar Producto</button>
+    <p id="mensaje"></p>
+  </div>
 
   <script>
-    const form = document.getElementById('form-producto');
-    const imagenInput = document.getElementById('imagen');
-    const imagenBase64 = document.getElementById('imagen_base64');
+    async function guardarProducto() {
+      const nombre = document.getElementById("nombre").value;
+      const precio = document.getElementById("precio").value;
+      const tipo = document.getElementById("tipo").value;
+      const imagenInput = document.getElementById("imagen");
+      const mensaje = document.getElementById("mensaje");
 
-    // Convertir imagen a base64 cuando seleccionan archivo
-    imagenInput.addEventListener('change', () => {
-      const file = imagenInput.files[0];
+      const stock = {
+        "Sucursal 1": parseInt(document.getElementById("stock1").value) || 0,
+        "Sucursal 2": parseInt(document.getElementById("stock2").value) || 0,
+        "Sucursal 3": parseInt(document.getElementById("stock3").value) || 0,
+        "Casa Matriz": parseInt(document.getElementById("matriz").value) || 0
+      };
+
+      if (!nombre || !precio || !imagenInput.files[0]) {
+        alert("Debes completar nombre, precio e imagen.");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        imagenBase64.value = reader.result.split(',')[1]; // solo base64
-      };
-      if (file) {
-        reader.readAsDataURL(file);
-      }
-    });
+      reader.onload = async function () {
+        const base64 = reader.result.split(',')[1];
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+        const payload = {
+          nombre,
+          precio,
+          tipo,
+          stock,
+          imagen_base64: base64
+        };
 
-      const producto = {
-        nombre: form.nombre.value,
-        precio: parseFloat(form.precio.value),
-        tipo: form.tipo.value,
-        stock: JSON.parse(form.stock.value),
-        imagen_base64: imagenBase64.value
-      };
+        try {
+          const res = await fetch('/api/agregar_producto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-      try {
-        const res = await fetch('/api/agregar_producto', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(producto)
-        });
-
-        const result = await res.json();
-        if (res.ok) {
-          alert("✅ Producto agregado correctamente.");
-          form.reset();
-          imagenBase64.value = '';
-        } else {
-          alert("❌ Error: " + result.error);
+          const data = await res.json();
+          if (res.ok) {
+            mensaje.textContent = "✅ Producto agregado correctamente";
+            mensaje.style.color = "green";
+          } else {
+            mensaje.textContent = "❌ Error: " + (data.error || "Error desconocido");
+            mensaje.style.color = "red";
+          }
+        } catch (err) {
+          mensaje.textContent = "❌ Error de red o del servidor";
+          mensaje.style.color = "red";
         }
-      } catch (error) {
-        alert("❌ Error al enviar el producto.");
-        console.error(error);
-      }
-    });
+      };
+      reader.readAsDataURL(imagenInput.files[0]);
+    }
   </script>
 </body>
 </html>

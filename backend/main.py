@@ -53,9 +53,63 @@ def obtener_tasa_cambio_cached():
 def index():
     return render_template('index.html')
 
-@app.route('/agregar_producto')
-def agregar_producto():
-    return render_template('agregar_producto.html')
+@app.route('/api/agregar_producto', methods=['POST'])
+def api_agregar_producto():
+    data = request.get_json()
+
+    try:
+        nombre = data['nombre']
+        precio = float(data['precio'])
+        tipo = data['tipo']
+        imagen_base64 = data['imagen_base64']
+        stock_dict = data['stock']
+
+        # Guardar imagen como archivo físico en static/images
+        from datetime import datetime
+        import base64
+
+        nombre_archivo = f"{nombre.replace(' ', '_')}_{datetime.now().timestamp():.0f}.png"
+        ruta_relativa = os.path.join("static", "images", nombre_archivo)
+        ruta_absoluta = os.path.join(os.path.dirname(__file__), ruta_relativa)
+
+        os.makedirs(os.path.dirname(ruta_absoluta), exist_ok=True)
+        with open(ruta_absoluta, "wb") as f:
+            f.write(base64.b64decode(imagen_base64))
+
+        # Preparar stock para gRPC
+        stock_items = [
+            productos_pb2.StockPorSucursal(sucursal=s, cantidad=c)
+            for s, c in stock_dict.items()
+        ]
+
+        import time
+        producto_id = int(time.time())
+
+        request_grpc = productos_pb2.ProductoRequest(
+            id=producto_id,
+            nombre=nombre,
+            precio=precio,
+            imagen_base64=imagen_base64,
+            stock=stock_items
+        )
+
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+            response = stub.AgregarProducto(request_grpc)
+
+        if response.exito:
+            return jsonify({
+                "mensaje": "Producto agregado correctamente",
+                "producto_id": producto_id,
+                "imagen_guardada_en": ruta_relativa
+            }), 200
+        else:
+            return jsonify({"error": response.mensaje}), 400
+
+    except Exception as e:
+        print("❌ Error al agregar producto vía Flask → gRPC:", e)
+        return jsonify({"error": "Error interno al procesar el producto"}), 500
+
 
 @app.route('/api/stock')
 def get_stock():

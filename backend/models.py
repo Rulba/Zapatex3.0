@@ -11,7 +11,9 @@ class Stock(db.Model):
     sucursal = db.Column(db.String(100), nullable=False)
     cantidad = db.Column(db.Integer, nullable=False)
     precio = db.Column(db.Float, nullable=False)
-    imagen_base64 = db.Column(db.Text, nullable=True)  # <-- Nueva columna para la imagen
+    
+    imagen_base64 = db.Column(db.Text, nullable=True)     # Se mantiene por compatibilidad
+    imagen_ruta = db.Column(db.String(200), nullable=True) # Nueva columna para archivo
 
     def to_dict(self):
         return {
@@ -20,5 +22,6 @@ class Stock(db.Model):
             "sucursal": self.sucursal,
             "cantidad": self.cantidad,
             "precio": self.precio,
-            "imagen_base64": self.imagen_base64  # <-- agregamos aquí también
+            "imagen_base64": self.imagen_base64,
+            "imagen_ruta": f"/static/images/{self.imagen_ruta}" if self.imagen_ruta else None
         }

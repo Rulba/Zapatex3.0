@@ -85,10 +85,14 @@ function mostrarProductos(filtro = '') {
       const div = document.createElement('div');
       div.className = 'sucursal';
 
-      // Imagen del producto si viene en base64
-      if (s.imagen_base64) {
+      // Mostrar imagen desde ruta si está disponible, o usar base64 como respaldo
+      if (s.imagen_ruta || s.imagen_base64) {
         const img = document.createElement('img');
-        img.src = 'data:image/png;base64,' + s.imagen_base64;
+        if (s.imagen_ruta) {
+          img.src = s.imagen_ruta;  // ya incluye "/static/images/xxx" desde backend
+        } else {
+          img.src = 'data:image/png;base64,' + s.imagen_base64;
+        }
         img.alt = s.producto;
         img.style.width = '50px';
         img.style.height = '50px';
