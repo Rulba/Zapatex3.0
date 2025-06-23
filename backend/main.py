@@ -1,7 +1,9 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, Response
 from flask_sqlalchemy import SQLAlchemy
 from models import Stock
 from extensions import db
+import time
+import threading
 from transbank_config import tx
 import requests
 from datetime import datetime, timedelta
