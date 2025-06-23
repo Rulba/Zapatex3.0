@@ -1,9 +1,12 @@
 let productos = [];
 let productoSeleccionado = '';
 
+// URL base de tu backend Flask
+const backendUrl = 'http://127.0.0.1:5000';
+
 async function cargarDatos() {
   try {
-    const res = await fetch('/api/stock');
+    const res = await fetch(`${backendUrl}/api/stock`);
     if (!res.ok) throw new Error(`Error al cargar stock: ${res.status}`);
     const data = await res.json();
 
@@ -85,11 +88,10 @@ function mostrarProductos(filtro = '') {
       const div = document.createElement('div');
       div.className = 'sucursal';
 
-      // Mostrar imagen desde ruta si está disponible, o usar base64 como respaldo
       if (s.imagen_ruta || s.imagen_base64) {
         const img = document.createElement('img');
         if (s.imagen_ruta) {
-          img.src = s.imagen_ruta;  // ya incluye "/static/images/xxx" desde backend
+          img.src = s.imagen_ruta;
         } else {
           img.src = 'data:image/png;base64,' + s.imagen_base64;
         }
@@ -196,7 +198,7 @@ document.getElementById('calcular').addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch(`/api/usd?clp=${totalCLP}`);
+    const res = await fetch(`${backendUrl}/api/usd?clp=${totalCLP}`);
     if (!res.ok) throw new Error(`Error en conversión USD: ${res.status}`);
     const data = await res.json();
 
@@ -221,7 +223,7 @@ document.getElementById('vender').addEventListener('click', async () => {
   if (!confirmacion) return;
 
   try {
-    const res = await fetch('/iniciar_pago', {
+    const res = await fetch(`${backendUrl}/iniciar_pago`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })

@@ -55,8 +55,19 @@ class ProductoService(productos_pb2_grpc.ProductoServiceServicer):
             ))
         return productos_pb2.ListaProductos(productos=productos_proto)
 
+    def EliminarProducto(self, request, context):
+        exito, mensaje = logic.eliminar_producto(request.id)
+        return productos_pb2.ProductoResponse(
+            exito=exito,
+            mensaje=mensaje
+        )
+
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    options = [
+        ('grpc.max_receive_message_length', 20 * 1024 * 1024),  # 20 MB
+        ('grpc.max_send_message_length', 20 * 1024 * 1024)
+    ]
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     productos_pb2_grpc.add_ProductoServiceServicer_to_server(ProductoService(), server)
     server.add_insecure_port('[::]:50051')
     server.start()

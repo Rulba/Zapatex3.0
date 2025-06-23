@@ -14,7 +14,6 @@ grpc_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'zapatex_grp
 print(f"Agregando ruta: {grpc_path}")
 sys.path.insert(0, grpc_path)
 
-
 import productos_pb2
 import productos_pb2_grpc
 
@@ -53,6 +52,10 @@ def obtener_tasa_cambio_cached():
 def index():
     return render_template('index.html')
 
+@app.route('/agregar_producto')
+def agregar_producto():
+    return render_template('agregar_producto.html')
+
 @app.route('/api/agregar_producto', methods=['POST'])
 def api_agregar_producto():
     data = request.get_json()
@@ -65,7 +68,6 @@ def api_agregar_producto():
         stock_dict = data['stock']
 
         # Guardar imagen como archivo físico en static/images
-        from datetime import datetime
         import base64
 
         nombre_archivo = f"{nombre.replace(' ', '_')}_{int(datetime.now().timestamp())}.png"
@@ -93,7 +95,11 @@ def api_agregar_producto():
             stock=stock_items
         )
 
-        with grpc.insecure_channel('localhost:50051') as channel:
+        options = [
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),  # 20MB
+            ('grpc.max_send_message_length', 20 * 1024 * 1024)
+        ]
+        with grpc.insecure_channel('localhost:50051', options=options) as channel:
             stub = productos_pb2_grpc.ProductoServiceStub(channel)
             response = stub.AgregarProducto(request_grpc)
 
@@ -110,27 +116,46 @@ def api_agregar_producto():
         print("❌ Error al agregar producto vía Flask → gRPC:", e)
         return jsonify({"error": "Error interno al procesar el producto"}), 500
 
-
 @app.route('/api/stock')
 def get_stock():
-    sucursales = []
-    casa_matriz = None
+    try:
+        options = [
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),  # 20MB
+            ('grpc.max_send_message_length', 20 * 1024 * 1024)
+        ]
+        with grpc.insecure_channel('localhost:50051', options=options) as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+            response = stub.ListarProductos(productos_pb2.Empty())
 
-    stocks = Stock.query.all()
-    for s in stocks:
-        info = {
-            "producto": s.producto,
-            "sucursal": s.sucursal,
-            "cantidad": s.cantidad,
-            "precio": s.precio,
-            "imagen_base64": s.imagen_base64 if s.imagen_base64 else ""
-        }
-        if s.sucursal.lower() == "casa matriz":
-            casa_matriz = info
-        else:
-            sucursales.append(info)
+        sucursales = []
+        casa_matriz = None
 
-    return jsonify({"sucursales": sucursales, "casa_matriz": casa_matriz})
+        for p in response.productos:
+            print(f"▶ Procesando producto: {p.nombre} (ID: {p.id})")
+            print(f"   - Precio: {p.precio}")
+            print(f"   - Stock total: {len(p.stock)} sucursales")
+
+            for stock_item in p.stock:
+                print(f"   - Sucursal: {stock_item.sucursal}, Cantidad: {stock_item.cantidad}")
+                info = {
+                    "producto": p.nombre,
+                    "sucursal": stock_item.sucursal,
+                    "cantidad": stock_item.cantidad,
+                    "precio": p.precio,
+                    "imagen_base64": p.imagen_base64 or ""
+                }
+                if stock_item.sucursal.lower() == "casa matriz":
+                    casa_matriz = info
+                else:
+                    sucursales.append(info)
+
+        return jsonify({"sucursales": sucursales, "casa_matriz": casa_matriz})
+
+    except Exception as e:
+        import traceback
+        print("❌ Ocurrió un error en /api/stock:")
+        traceback.print_exc()
+        return jsonify({"error": "No se pudo obtener stock"}), 500
 
 @app.route('/api/usd')
 def convertir_usd():
@@ -199,25 +224,36 @@ def iniciar_pago():
     except (TypeError, ValueError):
         return jsonify({"error": "Cantidad inválida"}), 400
 
-    stock_producto = Stock.query.filter_by(producto=producto).first()
-    if not stock_producto:
-        return jsonify({"error": "Producto no encontrado"}), 404
-
-    monto = stock_producto.precio * cantidad
-
+    # Obtener el producto desde gRPC
     try:
+        options = [
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),
+            ('grpc.max_send_message_length', 20 * 1024 * 1024)
+        ]
+        with grpc.insecure_channel('localhost:50051', options=options) as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+            response = stub.ListarProductos(productos_pb2.Empty())
+
+        producto_grpc = next((p for p in response.productos if p.nombre == producto), None)
+
+        if not producto_grpc:
+            return jsonify({"error": "Producto no encontrado"}), 404
+
+        monto = producto_grpc.precio * cantidad
+
         response = tx.create(
             buy_order=f"order_{producto}_{cantidad}_{int(datetime.utcnow().timestamp())}",
             session_id="session_123",
             amount=monto,
             return_url=request.host_url + "resultado_pago"
         )
+
         return jsonify({
             "url": response.url,
             "token": response.token
         })
     except Exception as e:
-        print(f"Error al iniciar pago Transbank: {e}")
+        print(f"❌ Error al iniciar pago Transbank:", e)
         return jsonify({"error": f"Error al iniciar pago: {e}"}), 500
 
 @app.route('/resultado_pago', methods=['GET', 'POST'])
@@ -238,46 +274,6 @@ def resultado_pago():
     except Exception as e:
         print("❌ Error al procesar el resultado del pago:", e)
         return "Error al procesar el pago", 500
-
-@app.route('/api/agregar_producto', methods=['POST'])
-def api_agregar_producto():
-    data = request.get_json()
-
-    try:
-        nombre = data['nombre']
-        precio = float(data['precio'])
-        tipo = data['tipo']
-        imagen_base64 = data['imagen_base64']
-        stock_dict = data['stock']
-
-        stock_items = [
-            productos_pb2.StockPorSucursal(sucursal=s, cantidad=c)
-            for s, c in stock_dict.items()
-        ]
-
-        import time
-        producto_id = int(time.time())
-
-        request_grpc = productos_pb2.ProductoRequest(
-            id=producto_id,
-            nombre=nombre,
-            precio=precio,
-            imagen_base64=imagen_base64,
-            stock=stock_items
-        )
-
-        with grpc.insecure_channel('localhost:50051') as channel:
-            stub = productos_pb2_grpc.ProductoServiceStub(channel)
-            response = stub.AgregarProducto(request_grpc)
-
-        if response.exito:
-            return jsonify({"mensaje": "Producto agregado correctamente", "producto_id": producto_id}), 200
-        else:
-            return jsonify({"error": response.mensaje}), 400
-
-    except Exception as e:
-        print("❌ Error al agregar producto vía Flask → gRPC:", e)
-        return jsonify({"error": "Error interno al procesar el producto"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
