@@ -6,7 +6,8 @@ service ProductoService {
   rpc AgregarProducto (ProductoRequest) returns (ProductoResponse);
   rpc ObtenerProducto (ProductoID) returns (ProductoResponse);
   rpc ListarProductos (Empty) returns (ListaProductos);
-  rpc EliminarProducto (ProductoID) returns (ProductoResponse);  // <-- nueva RPC
+  rpc EliminarProducto (ProductoID) returns (ProductoResponse);
+  rpc ActualizarStock (ProductoRequest) returns (ProductoResponse);  // <-- Mueve esta línea aquí
 }
 
 message ProductoRequest {

@@ -59,7 +59,6 @@ def agregar_producto():
 @app.route('/api/agregar_producto', methods=['POST'])
 def api_agregar_producto():
     data = request.get_json()
-
     try:
         nombre = data['nombre']
         precio = float(data['precio'])
@@ -67,18 +66,14 @@ def api_agregar_producto():
         imagen_base64 = data['imagen_base64']
         stock_dict = data['stock']
 
-        # Guardar imagen como archivo físico en static/images
         import base64
-
         nombre_archivo = f"{nombre.replace(' ', '_')}_{int(datetime.now().timestamp())}.png"
         ruta_relativa = os.path.join("static", "images", nombre_archivo)
         ruta_absoluta = os.path.join(os.path.dirname(__file__), ruta_relativa)
-
         os.makedirs(os.path.dirname(ruta_absoluta), exist_ok=True)
         with open(ruta_absoluta, "wb") as f:
             f.write(base64.b64decode(imagen_base64))
 
-        # Preparar stock para gRPC
         stock_items = [
             productos_pb2.StockPorSucursal(sucursal=s, cantidad=c)
             for s, c in stock_dict.items()
@@ -96,7 +91,7 @@ def api_agregar_producto():
         )
 
         options = [
-            ('grpc.max_receive_message_length', 20 * 1024 * 1024),  # 20MB
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),
             ('grpc.max_send_message_length', 20 * 1024 * 1024)
         ]
         with grpc.insecure_channel('localhost:50051', options=options) as channel:
@@ -120,7 +115,7 @@ def api_agregar_producto():
 def get_stock():
     try:
         options = [
-            ('grpc.max_receive_message_length', 20 * 1024 * 1024),  # 20MB
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),
             ('grpc.max_send_message_length', 20 * 1024 * 1024)
         ]
         with grpc.insecure_channel('localhost:50051', options=options) as channel:
@@ -131,12 +126,7 @@ def get_stock():
         casa_matriz = None
 
         for p in response.productos:
-            print(f"▶ Procesando producto: {p.nombre} (ID: {p.id})")
-            print(f"   - Precio: {p.precio}")
-            print(f"   - Stock total: {len(p.stock)} sucursales")
-
             for stock_item in p.stock:
-                print(f"   - Sucursal: {stock_item.sucursal}, Cantidad: {stock_item.cantidad}")
                 info = {
                     "producto": p.nombre,
                     "sucursal": stock_item.sucursal,
@@ -170,48 +160,75 @@ def convertir_usd():
 
 @app.route('/venta', methods=['POST'])
 def venta():
-    data = request.json
-    producto = data.get('producto')
+    datos = request.json
+    producto_nombre = datos.get('producto')
+
     try:
-        cantidad = int(data.get('cantidad'))
+        cantidad = int(datos.get('cantidad'))
         if cantidad <= 0:
             raise ValueError()
     except (TypeError, ValueError):
         return jsonify({"error": "Cantidad inválida"}), 400
 
-    disponibles = Stock.query.filter(
-        Stock.producto == producto,
-        Stock.cantidad > 0
-    ).order_by(Stock.cantidad.desc()).all()
-
-    total_disponible = sum(s.cantidad for s in disponibles)
-    if total_disponible < cantidad:
-        return jsonify({"error": "Stock insuficiente"}), 400
-
     try:
-        # Intentar vender desde una sola sucursal
-        for sucursal in disponibles:
-            if sucursal.cantidad >= cantidad:
-                sucursal.cantidad -= cantidad
-                db.session.commit()
-                return jsonify({"mensaje": "Venta desde una sola sucursal realizada con éxito"})
+        options = [
+            ('grpc.max_receive_message_length', 20 * 1024 * 1024),
+            ('grpc.max_send_message_length', 20 * 1024 * 1024)
+        ]
+        with grpc.insecure_channel('localhost:50051', options=options) as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+            respuesta = stub.ListarProductos(productos_pb2.Empty())
 
-        # Si no es posible, repartir la venta
+        producto = next((p for p in respuesta.productos if p.nombre == producto_nombre), None)
+
+        if not producto:
+            return jsonify({"error": "Producto no encontrado en gRPC"}), 404
+
+        stock_total = sum([s.cantidad for s in producto.stock])
+        if stock_total < cantidad:
+            return jsonify({"error": f"Stock insuficiente. Solo hay {stock_total} unidades"}), 400
+
         restante = cantidad
-        for s in disponibles:
-            if restante == 0:
-                break
-            a_descontar = min(s.cantidad, restante)
-            s.cantidad -= a_descontar
-            restante -= a_descontar
+        nuevo_stock = []
 
-        db.session.commit()
-        return jsonify({"mensaje": "Venta repartida entre sucursales realizada con éxito"})
+        for s in producto.stock:
+            if restante == 0:
+                nuevo_stock.append(s)
+                continue
+
+            usar = min(s.cantidad, restante)
+            restante -= usar
+            nuevo_stock.append(
+                productos_pb2.StockPorSucursal(
+                    sucursal=s.sucursal,
+                    cantidad=s.cantidad - usar
+                )
+            )
+
+        # Actualizar stock en gRPC
+        request_actualizacion = productos_pb2.ProductoRequest(
+            id=producto.id,
+            nombre=producto.nombre,
+            precio=producto.precio,
+            imagen_base64=producto.imagen_base64,
+            stock=nuevo_stock
+        )
+
+        actualizacion = stub.ActualizarStock(request_actualizacion)
+
+        if actualizacion.exito:
+            print("🟢 Venta realizada y stock actualizado en gRPC")
+            return jsonify({
+                "mensaje": f"Venta de {cantidad} unidades de '{producto_nombre}' realizada con éxito",
+                "stock_restante": [{ "sucursal": s.sucursal, "cantidad": s.cantidad } for s in nuevo_stock]
+            })
+        else:
+            return jsonify({"error": f"No se pudo actualizar el stock: {actualizacion.mensaje}"}), 500
 
     except Exception as e:
-        db.session.rollback()
-        print(f"Error al procesar la venta: {e}")
-        return jsonify({"error": "Error interno en el servidor"}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Error interno al procesar la venta"}), 500
 
 @app.route('/iniciar_pago', methods=['POST'])
 def iniciar_pago():
@@ -224,7 +241,6 @@ def iniciar_pago():
     except (TypeError, ValueError):
         return jsonify({"error": "Cantidad inválida"}), 400
 
-    # Obtener el producto desde gRPC
     try:
         options = [
             ('grpc.max_receive_message_length', 20 * 1024 * 1024),
