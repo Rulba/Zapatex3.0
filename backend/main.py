@@ -68,7 +68,7 @@ def api_agregar_producto():
         from datetime import datetime
         import base64
 
-        nombre_archivo = f"{nombre.replace(' ', '_')}_{datetime.now().timestamp():.0f}.png"
+        nombre_archivo = f"{nombre.replace(' ', '_')}_{int(datetime.now().timestamp())}.png"
         ruta_relativa = os.path.join("static", "images", nombre_archivo)
         ruta_absoluta = os.path.join(os.path.dirname(__file__), ruta_relativa)
 
