@@ -70,7 +70,6 @@ function mostrarProductos(filtro = '') {
     flecha.style.display = 'inline-block';
     flecha.style.transition = 'transform 0.2s ease';
 
-    // Si este producto está seleccionado, rotamos la flecha
     if (nombreProducto === productoSeleccionado) {
       flecha.style.transform = 'rotate(90deg)';
     }
@@ -85,7 +84,22 @@ function mostrarProductos(filtro = '') {
     productosAgrupados[nombreProducto].forEach(s => {
       const div = document.createElement('div');
       div.className = 'sucursal';
-      div.textContent = `${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`;
+
+      // Imagen del producto si viene en base64
+      if (s.imagen_base64) {
+        const img = document.createElement('img');
+        img.src = 'data:image/png;base64,' + s.imagen_base64;
+        img.alt = s.producto;
+        img.style.width = '50px';
+        img.style.height = '50px';
+        img.style.objectFit = 'contain';
+        img.style.marginRight = '10px';
+        img.style.verticalAlign = 'middle';
+        div.appendChild(img);
+      }
+
+      const texto = document.createTextNode(`${s.sucursal}: Cant: ${s.cantidad} | Precio: ${s.precio}`);
+      div.appendChild(texto);
       contenedorSucursales.appendChild(div);
 
       if (!sucursalesAgregadas.has(s.sucursal)) {
@@ -108,20 +122,15 @@ function mostrarProductos(filtro = '') {
 
     header.addEventListener('click', () => {
       const visible = contenedorSucursales.style.display === 'block';
-
-      // Si estaba visible, lo cerramos y deseleccionamos
       if (visible) {
         contenedorSucursales.style.display = 'none';
         flecha.style.transform = 'rotate(0deg)';
         productoSeleccionado = '';
       } else {
-        // Si no estaba visible, abrimos solo este, cerrando otros
         productoSeleccionado = nombreProducto;
       }
 
-      // Vuelve a renderizar para actualizar todo el estado (flechas, resaltado, detalle)
       mostrarProductos(document.getElementById('buscar').value);
-
       actualizarBotones();
     });
 
