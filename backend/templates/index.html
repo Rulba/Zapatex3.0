@@ -57,5 +57,22 @@
   <div id="alerta-stock"></div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <!-- 🔴 Script SSE para recibir alertas de stock bajo -->
+  <script>
+    const sse = new EventSource("/stream_stock_bajo");
+    sse.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.length > 0) {
+        const mensajes = data.map(e => `🟠 ${e.producto} en ${e.sucursal} tiene solo ${e.cantidad} unidades`).join("<br>");
+        document.getElementById("alerta-stock").innerHTML = `
+          <div style="background: #fff3cd; color: #856404; padding: 10px; border: 1px solid #ffeeba; border-radius: 4px; margin-top: 20px;">
+            <strong>⚠️ Stock Bajo Detectado:</strong><br>${mensajes}
+          </div>
+        `;
+      }
+    };
+  </script>
+
 </body>
 </html>

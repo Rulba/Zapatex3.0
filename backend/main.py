@@ -25,6 +25,44 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
+# Lista de conexiones activas para SSE
+clientes_sse = []
+
+def generar_evento_stock_bajo():
+    while True:
+        time.sleep(5)  # Revisa cada 5 segundos
+        try:
+            options = [
+                ('grpc.max_receive_message_length', 20 * 1024 * 1024),
+                ('grpc.max_send_message_length', 20 * 1024 * 1024)
+            ]
+            with grpc.insecure_channel('localhost:50051', options=options) as channel:
+                stub = productos_pb2_grpc.ProductoServiceStub(channel)
+                respuesta = stub.ListarProductos(productos_pb2.Empty())
+
+            alertas = []
+            for producto in respuesta.productos:
+                for s in producto.stock:
+                    if s.cantidad < 10:
+                        alertas.append({
+                            "producto": producto.nombre,
+                            "sucursal": s.sucursal,
+                            "cantidad": s.cantidad
+                        })
+
+            if alertas:
+                from json import dumps
+                mensaje = f"data: {dumps(alertas)}\n\n"
+                for cliente in clientes_sse:
+                    try:
+                        cliente.put(mensaje)
+                    except:
+                        pass  # Si falla, se ignora
+
+        except Exception as e:
+            print("❌ Error en hilo SSE:", e)
+
+
 # Cache simple para evitar múltiples llamadas a la API de tasa de cambio
 tasa_cache = {"valor": None, "ultima_actualizacion": None}
 
@@ -292,6 +330,9 @@ def resultado_pago():
     except Exception as e:
         print("❌ Error al procesar el resultado del pago:", e)
         return "Error al procesar el pago", 500
+    
+threading.Thread(target=generar_evento_stock_bajo, daemon=True).start()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
