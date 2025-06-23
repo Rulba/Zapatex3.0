@@ -65,16 +65,12 @@ class ProductoService(productos_pb2_grpc.ProductoServiceServicer):
     def ActualizarStock(self, request, context):
         data = {
             "id": request.id,
-            "nombre": request.nombre,
-            "precio": request.precio,
-            "imagen_base64": request.imagen_base64,
             "stock": [{"sucursal": s.sucursal, "cantidad": s.cantidad} for s in request.stock]
         }
         exito, mensaje = logic.actualizar_stock(data)
         return productos_pb2.ProductoResponse(
             exito=exito,
-            mensaje=mensaje,
-            producto=request
+            mensaje=mensaje
         )
 
 def serve():

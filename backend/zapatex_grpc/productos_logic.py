@@ -14,8 +14,6 @@ def actualizar_stock(data):
     producto = productos.get(data['id'])
     if not producto:
         return False, "Producto no encontrado"
-
     # data['stock'] es lista de dicts con sucursal y cantidad
     producto['stock'] = data['stock']
     return True, "Stock actualizado correctamente"
- 

@@ -213,20 +213,38 @@ document.getElementById('calcular').addEventListener('click', async () => {
 document.getElementById('vender').addEventListener('click', async () => {
   const cantidad = parseInt(document.getElementById('cantidad').value);
   const nombreProducto = productoSeleccionado;
+  const sucursalSeleccionada = document.getElementById('sucursal').value;
 
   if (!nombreProducto || isNaN(cantidad) || cantidad <= 0) {
     alert('Selecciona un producto válido y una cantidad mayor a 0');
     return;
   }
 
-  const confirmacion = confirm('¿Confirmar pago con Transbank?');
+  if (!sucursalSeleccionada) {
+    alert('Selecciona una sucursal');
+    return;
+  }
+
+  const stockSucursal = productos.find(p =>
+    p.producto === nombreProducto && p.sucursal === sucursalSeleccionada
+  );
+
+  if (!stockSucursal || stockSucursal.cantidad < cantidad) {
+    alert(`Stock insuficiente en ${sucursalSeleccionada}. Solo hay ${stockSucursal?.cantidad || 0} unidades.`);
+    return;
+  }
+
+  const confirmacion = confirm(`¿Confirmar compra de ${cantidad} unidades de '${nombreProducto}' en ${sucursalSeleccionada}?`);
   if (!confirmacion) return;
 
   try {
     const res = await fetch(`${backendUrl}/iniciar_pago`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ producto: nombreProducto, cantidad: cantidad })
+      body: JSON.stringify({
+        producto: nombreProducto,
+        cantidad: cantidad
+      })
     });
 
     const text = await res.text();
@@ -275,5 +293,6 @@ document.getElementById('vender').addEventListener('click', async () => {
     alert('❌ Error al intentar iniciar el pago. Revisa tu conexión o contacta soporte.');
   }
 });
+
 
 document.addEventListener('DOMContentLoaded', cargarDatos);
