@@ -1,9 +1,10 @@
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, jsonify, request, Response, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from models import Stock
 from extensions import db
 import time
 import threading
+import queue
 from transbank_config import tx
 import requests
 from datetime import datetime, timedelta
@@ -332,6 +333,21 @@ def resultado_pago():
         return "Error al procesar el pago", 500
     
 threading.Thread(target=generar_evento_stock_bajo, daemon=True).start()
+
+@app.route('/stream_stock_bajo')
+def stream_stock_bajo():
+    def event_stream():
+        q = queue.Queue()
+        clientes_sse.append(q)
+        try:
+            while True:
+                mensaje = q.get()  # Espera mensajes
+                yield mensaje
+        except GeneratorExit:
+            # Cliente desconectado, remover cola
+            clientes_sse.remove(q)
+
+    return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
 
 
 if __name__ == '__main__':
