@@ -1,7 +1,8 @@
-from flask import Flask, render_template, jsonify, request, Response
+from flask import Flask, render_template, jsonify, request, Response, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from models import Stock
 from extensions import db
+import queue
 import time
 import threading
 from transbank_config import tx
@@ -24,6 +25,44 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///zapatex.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+# Lista de conexiones activas para SSE
+clientes_sse = []
+
+def generar_evento_stock_bajo():
+    while True:
+        time.sleep(5)  # Revisa cada 5 segundos
+        try:
+            options = [
+                ('grpc.max_receive_message_length', 20 * 1024 * 1024),
+                ('grpc.max_send_message_length', 20 * 1024 * 1024)
+            ]
+            with grpc.insecure_channel('localhost:50051', options=options) as channel:
+                stub = productos_pb2_grpc.ProductoServiceStub(channel)
+                respuesta = stub.ListarProductos(productos_pb2.Empty())
+
+            alertas = []
+            for producto in respuesta.productos:
+                for s in producto.stock:
+                    if s.cantidad < 10:
+                        alertas.append({
+                            "producto": producto.nombre,
+                            "sucursal": s.sucursal,
+                            "cantidad": s.cantidad
+                        })
+
+            if alertas:
+                from json import dumps
+                mensaje = f"data: {dumps(alertas)}\n\n"
+                for cliente in clientes_sse:
+                    try:
+                        cliente.put(mensaje)
+                    except:
+                        pass  # Si falla, se ignora
+
+        except Exception as e:
+            print("❌ Error en hilo SSE:", e)
+
 
 # Lista de conexiones activas para SSE
 clientes_sse = []
@@ -332,6 +371,24 @@ def resultado_pago():
         return "Error al procesar el pago", 500
     
 threading.Thread(target=generar_evento_stock_bajo, daemon=True).start()
+
+
+
+
+@app.route('/stream_stock_bajo')
+def stream_stock_bajo():
+    def event_stream():
+        q = queue.Queue()
+        clientes_sse.append(q)
+        try:
+            while True:
+                mensaje = q.get()  # Espera mensajes
+                yield mensaje
+        except GeneratorExit:
+            # Cliente desconectado, remover cola
+            clientes_sse.remove(q)
+
+    return Response(stream_with_context(event_stream()), mimetype='text/event-stream')
 
 
 if __name__ == '__main__':
