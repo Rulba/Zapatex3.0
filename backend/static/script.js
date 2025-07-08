@@ -132,8 +132,10 @@ function mostrarProductos(filtro = '') {
         contenedorSucursales.style.display = 'none';
         flecha.style.transform = 'rotate(0deg)';
         productoSeleccionado = '';
+        window.productoSeleccionado = '';
       } else {
         productoSeleccionado = nombreProducto;
+        window.productoSeleccionado = nombreProducto; // 🔑 esto es lo que faltaba
       }
 
       mostrarProductos(document.getElementById('buscar').value);
@@ -293,6 +295,5 @@ document.getElementById('vender').addEventListener('click', async () => {
     alert('❌ Error al intentar iniciar el pago. Revisa tu conexión o contacta soporte.');
   }
 });
-
 
 document.addEventListener('DOMContentLoaded', cargarDatos);

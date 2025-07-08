@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestión de Productos - Zapatex</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <style>
+    body {
+      background-color: #f5f7fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      margin: 20px;
+    }
+    table {
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      width: 100%;
+      margin-top: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    thead th {
+      background-color: #e3eaf2;
+      color: #34495e;
+      font-weight: 600;
+      border-bottom: none;
+    }
+    tr.producto-header {
+      background-color: #fefefe;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    tr.producto-header:hover {
+      background-color: #dce6f1;
+    }
+    .subtabla {
+      background-color: #fafbfc;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+      border-radius: 0 0 10px 10px;
+    }
+    .subtabla td {
+      border-top: none;
+      padding: 10px 15px;
+    }
+    .subtabla table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+    }
+    .subtabla th, .subtabla td {
+      padding: 8px 12px;
+      background-color: #f8f9fa;
+      border-radius: 6px;
+    }
+    button {
+      margin: 0 5px 5px 0;
+      padding: 6px 12px;
+      cursor: pointer;
+      background-color: #3f51b5;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #2c3e9a;
+    }
+    /* Botón eliminar distinto */
+    #btn-eliminar-producto {
+      background-color: #e74c3c !important;
+    }
+    #btn-eliminar-producto:hover {
+      background-color: #c0392b !important;
+    }
+    /* Modal estilos */
+    .modal {
+      display: none; /* Oculto por defecto */
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 25px 30px;
+      border-radius: 12px;
+      width: 350px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      position: relative;
+      font-size: 1rem;
+      color: #222;
+    }
+    .modal-header {
+      font-size: 1.3em;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #34495e;
+    }
+    .close {
+      color: #999;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      position: absolute;
+      right: 20px;
+      top: 15px;
+      transition: color 0.3s ease;
+    }
+    .close:hover {
+      color: #e74c3c;
+    }
+    .modal-actions button {
+      margin-right: 10px;
+      margin-top: 15px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    input[type="number"] {
+      width: 100px;
+      padding: 7px 10px;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      outline-color: #3f51b5;
+      transition: border-color 0.3s ease;
+    }
+    input[type="number"]:focus {
+      border-color: #3f51b5;
+    }
+    img {
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+  </style>
+</head>
+<body>
+  <h1>Gestión de Productos</h1>
+  <button onclick="location.href='{{ url_for('index') }}'">← Volver a la tienda</button>
+
+  <table id="tabla-productos">
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Precio (CLP)</th>
+        <th>Imagen</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Se cargarán productos y sucursales aquí -->
+    </tbody>
+  </table>
+
+  <!-- Modal para modificar stock -->
+  <div id="modal-stock" class="modal">
+    <div class="modal-content">
+      <span class="close" id="cerrar-modal">&times;</span>
+      <div class="modal-header" id="modal-titulo">Modificar stock</div>
+      <div>
+        <label>Producto: <strong id="modal-producto"></strong></label><br>
+        <label>Sucursal: <strong id="modal-sucursal"></strong></label>
+      </div>
+      <div style="margin-top:10px;">
+        <label for="modal-cantidad">Cantidad:</label><br>
+        <input type="number" id="modal-cantidad" min="1" value="1" />
+      </div>
+      <div class="modal-actions">
+        <button id="btn-agregar-stock">Agregar Stock</button>
+        <button id="btn-quitar-stock">Quitar Stock</button>
+        <button id="btn-eliminar-producto">Eliminar Producto</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let productosData = [];
+    let productoSeleccionado = null;
+    let sucursalSeleccionada = null;
+
+    async function cargarProductos() {
+      const res = await fetch('/api/stock');
+      const data = await res.json();
+
+      // Agrupar por producto
+      const productosMap = new Map();
+
+      [...data.sucursales, data.casa_matriz].filter(Boolean).forEach(item => {
+        if (!productosMap.has(item.producto)) {
+          productosMap.set(item.producto, {
+            nombre: item.producto,
+            precio: item.precio,
+            imagen_base64: item.imagen_base64,
+            sucursales: []
+          });
+        }
+        productosMap.get(item.producto).sucursales.push({
+          sucursal: item.sucursal,
+          cantidad: item.cantidad
+        });
+      });
+
+      productosData = Array.from(productosMap.values());
+
+      const tbody = document.querySelector('#tabla-productos tbody');
+      tbody.innerHTML = '';
+
+      productosData.forEach((producto, index) => {
+        // Fila header del producto
+        const trHeader = document.createElement('tr');
+        trHeader.classList.add('producto-header');
+        trHeader.dataset.index = index;
+
+        trHeader.innerHTML = `
+          <td>${producto.nombre}</td>
+          <td>${producto.precio.toFixed(2)}</td>
+          <td>${producto.imagen_base64 ? `<img src="data:image/png;base64,${producto.imagen_base64}" style="width:50px; height:50px; object-fit:contain;">` : 'Sin imagen'}</td>
+          <td>Haz clic para ver sucursales</td>
+        `;
+        tbody.appendChild(trHeader);
+
+        // Fila colapsable con sucursales
+        const trSubtabla = document.createElement('tr');
+        trSubtabla.classList.add('subtabla');
+        trSubtabla.style.display = 'none';
+
+        const tdSubtabla = document.createElement('td');
+        tdSubtabla.colSpan = 4;
+
+        let sucursalHtml = `
+          <table style="width: 100%; border-collapse: separate; border-spacing: 0 6px;">
+            <thead>
+              <tr style="background:#dce6f1;">
+                <th>Sucursal</th>
+                <th>Cantidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        producto.sucursales.forEach(sucursal => {
+          sucursalHtml += `
+            <tr>
+              <td>${sucursal.sucursal}</td>
+              <td>${sucursal.cantidad}</td>
+              <td>
+                <button onclick="abrirModal('${producto.nombre}', '${sucursal.sucursal}')">Modificar</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        sucursalHtml += `</tbody></table>`;
+
+        tdSubtabla.innerHTML = sucursalHtml;
+        trSubtabla.appendChild(tdSubtabla);
+        tbody.appendChild(trSubtabla);
+
+        // Evento para togglear subtabla
+        trHeader.addEventListener('click', () => {
+          trSubtabla.style.display = trSubtabla.style.display === 'none' ? 'table-row' : 'none';
+        });
+      });
+    }
+
+    function abrirModal(producto, sucursal) {
+      productoSeleccionado = producto;
+      sucursalSeleccionada = sucursal;
+      document.getElementById('modal-producto').textContent = producto;
+      document.getElementById('modal-sucursal').textContent = sucursal;
+      document.getElementById('modal-cantidad').value = 1;
+      document.getElementById('modal-stock').style.display = 'block';
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-stock').style.display = 'none';
+      productoSeleccionado = null;
+      sucursalSeleccionada = null;
+    }
+
+    document.getElementById('cerrar-modal').addEventListener('click', cerrarModal);
+    window.addEventListener('click', (e) => {
+      if (e.target == document.getElementById('modal-stock')) cerrarModal();
+    });
+
+    async function modificarStock(accion) {
+      const cantidadInput = document.getElementById('modal-cantidad');
+      const cantidad = parseInt(cantidadInput.value);
+      if (!productoSeleccionado || !sucursalSeleccionada) {
+        alert('No hay producto ni sucursal seleccionados.');
+        return;
+      }
+      if (accion !== 'eliminar' && (isNaN(cantidad) || cantidad <= 0)) {
+        alert('Ingrese una cantidad válida mayor que 0');
+        return;
+      }
+
+      let datos = {
+        producto: productoSeleccionado,
+        sucursal: sucursalSeleccionada,
+        accion: accion
+      };
+      if (accion !== 'eliminar') {
+        datos.cantidad = cantidad;
+      }
+
+      try {
+        const res = await fetch('/api/stock/modificar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos)
+        });
+        const respuesta = await res.json();
+
+        if (res.ok) {
+          alert(respuesta.mensaje);
+          cerrarModal();
+          cargarProductos();
+        } else {
+          alert(respuesta.error || 'Error inesperado');
+        }
+      } catch (e) {
+        alert('Error de red');
+      }
+    }
+
+    document.getElementById('btn-agregar-stock').addEventListener('click', () => modificarStock('agregar'));
+    document.getElementById('btn-quitar-stock').addEventListener('click', () => modificarStock('quitar'));
+    document.getElementById('btn-eliminar-producto').addEventListener('click', () => {
+      if (confirm(`¿Seguro que quieres eliminar el producto "${productoSeleccionado}" en la sucursal "${sucursalSeleccionada}"? Esta acción no se puede deshacer.`)) {
+        modificarStock('eliminar');
+      }
+    });
+
+    cargarProductos();
+  </script>
+</body>
+</html>
