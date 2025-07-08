@@ -9,5 +9,13 @@ entrar desde a terminal a la carpeta backend:
    `venv\Scripts\activate`
 4. Instala dependencias:
    `pip install -r requirements.txt`
-5. Ejecuta:
-   `python main.py`
+5. dividir terminal
+6. activar entrono virtual en la otra division
+7. entrar a la carpeta grpc:
+   cd zapatex_grpc
+8. ejecutar servidro grpc:
+   "python grpc_server.py"
+9. Ejecutar:
+   `python init_db,py`
+10. Ejecutar:
+    "python main.py"
