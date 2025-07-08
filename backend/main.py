@@ -202,8 +202,73 @@ def convertir_usd():
 
 @app.route('/venta', methods=['POST'])
 def venta():
-    # Código omitido por brevedad
-    return jsonify({"mensaje": "Venta procesada (placeholder)"}), 200
+    data = request.get_json()
+    producto_nombre = data.get('producto')
+    cantidad = data.get('cantidad')
+    sucursal = data.get('sucursal')
+
+    if not producto_nombre or not sucursal or not cantidad:
+        return jsonify({"error": "Faltan datos: producto, sucursal o cantidad"}), 400
+
+    try:
+        cantidad = int(cantidad)
+        if cantidad <= 0:
+            return jsonify({"error": "Cantidad debe ser mayor a 0"}), 400
+    except ValueError:
+        return jsonify({"error": "Cantidad inválida"}), 400
+
+    options = [
+        ('grpc.max_receive_message_length', 20 * 1024 * 1024),
+        ('grpc.max_send_message_length', 20 * 1024 * 1024)
+    ]
+
+    try:
+        with grpc.insecure_channel('localhost:50051', options=options) as channel:
+            stub = productos_pb2_grpc.ProductoServiceStub(channel)
+
+            response = stub.ListarProductos(productos_pb2.Empty())
+            producto = next((p for p in response.productos if p.nombre == producto_nombre), None)
+            if not producto:
+                return jsonify({"error": "Producto no encontrado"}), 404
+
+            stock_sucursal = next((s for s in producto.stock if s.sucursal == sucursal), None)
+            if not stock_sucursal:
+                return jsonify({"error": f"No existe stock en sucursal {sucursal}"}), 404
+
+            if stock_sucursal.cantidad < cantidad:
+                return jsonify({"error": f"Stock insuficiente en {sucursal}. Solo quedan {stock_sucursal.cantidad} unidades."}), 400
+
+            nuevo_stock = []
+            for s in producto.stock:
+                if s.sucursal == sucursal:
+                    nueva_cantidad = s.cantidad - cantidad
+                    if nueva_cantidad < 0:
+                        return jsonify({"error": f"Stock insuficiente al intentar actualizar."}), 400
+                    nuevo_stock.append(productos_pb2.StockPorSucursal(sucursal=s.sucursal, cantidad=nueva_cantidad))
+                else:
+                    nuevo_stock.append(productos_pb2.StockPorSucursal(sucursal=s.sucursal, cantidad=s.cantidad))
+
+            request_actualizacion = productos_pb2.ProductoRequest(
+                id=producto.id,
+                nombre=producto.nombre,
+                precio=producto.precio,
+                imagen_base64=producto.imagen_base64,
+                stock=nuevo_stock
+            )
+
+            respuesta = stub.ActualizarStock(request_actualizacion)
+
+            if respuesta.exito:
+                return jsonify({"mensaje": "Venta procesada y stock actualizado correctamente"})
+            else:
+                return jsonify({"error": respuesta.mensaje}), 500
+
+    except grpc.RpcError as e:
+        return jsonify({"error": f"Error en comunicación gRPC: {e}"}), 500
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno: {e}"}), 500
 
 # Cambiado para usar URL local y token simulado
 @app.route('/iniciar_pago', methods=['POST'])
